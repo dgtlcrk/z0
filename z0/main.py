@@ -1,13 +1,8 @@
-from __future__ import annotations
-
-from z0.config import config
+from z0.services.irc import run
 
 
-def main() -> None:
-    print("=== z0 ===")
-    print(f"server: {config.server}:{config.port}")
-    print(f"nickname: {config.nickname}")
-    print(f"channel: {config.channel}")
+def main():
+    run()
 
 
 if __name__ == "__main__":
