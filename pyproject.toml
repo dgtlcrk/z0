@@ -39,6 +39,8 @@ dependencies = [
 [project.scripts]
 z0 = "z0.main:main"
 
+z0-botops = "z0.botops.cli:main"
+z0-banner = "z0.botops.banner:main"
 [project.urls]
 Repository = "https://github.com/dgtlcrk/z0"
 Issues = "https://github.com/dgtlcrk/z0/issues"

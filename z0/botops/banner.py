@@ -1,4 +1,4 @@
-"""Command-line entry point for the z0_n3t BotOps banner."""
+"""Backward-compatible BotOps banner entry point."""
 
 from __future__ import annotations
 
