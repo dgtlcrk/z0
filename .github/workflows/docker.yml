@@ -1,45 +1,58 @@
-name: Build and Push z0
+name: Build and Push z0 to Amazon ECR
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+    paths:
+      - Dockerfile
+      - requirements.txt
+      - pyproject.toml
+      - "z0/**"
+      - ".github/workflows/docker.yml"
 
 permissions:
   contents: read
   id-token: write
 
-env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: z0
-  ECR_REGISTRY: 209586344300.dkr.ecr.us-east-1.amazonaws.com
-
 jobs:
   build-and-push:
+    name: Publish container image
+    if: >-
+      ${{
+        vars.AWS_REGION != '' &&
+        vars.ECR_REPOSITORY != '' &&
+        vars.AWS_ROLE_TO_ASSUME != ''
+      }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+      - name: Configure AWS credentials with GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
-          role-to-assume: arn:aws:iam::209586344300:role/z0-actions-ecr-push
-          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Log in to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push image
         shell: bash
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
         run: |
           IMAGE_TAG="${GITHUB_SHA:0:12}"
 
           docker build \
-            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
-            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
+            --tag "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
+            --tag "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
             .
 
           docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
