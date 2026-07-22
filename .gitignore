@@ -73,3 +73,6 @@ Thumbs.db
 
 # Python package build metadata
 *.egg-info/
+
+# Local BotOps backups
+.botops-backup-*/
