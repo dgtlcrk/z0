@@ -298,7 +298,6 @@ Release history is available in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## License
 
-An open-source license has not yet been selected.
+Licensed under the Apache License, Version 2.0.
 
-Until a `LICENSE` file is added, the source is not granted for reuse,
-redistribution, or modification by others.
+See [`LICENSE`](LICENSE) for the complete license terms.
