@@ -2,11 +2,9 @@ name: Build and Push z0
 
 on:
   workflow_dispatch:
-
   push:
     branches:
       - main
-      - feature/aws-foundation
 
 permissions:
   contents: read
@@ -15,7 +13,7 @@ permissions:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: z0
-  AWS_ACCOUNT_ID: "209586344300"
+  ECR_REGISTRY: 209586344300.dkr.ecr.us-east-1.amazonaws.com
 
 jobs:
   build-and-push:
@@ -29,26 +27,20 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::209586344300:role/z0-actions-ecr-push
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Generate image metadata
-        id: metadata
+      - name: Build and push image
         shell: bash
         run: |
-          echo "sha_tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
-          echo "registry=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com" >> "$GITHUB_OUTPUT"
+          IMAGE_TAG="${GITHUB_SHA:0:12}"
 
-      - name: Build Docker image
-        run: |
           docker build \
-            --tag "${{ steps.metadata.outputs.registry }}/${ECR_REPOSITORY}:${{ steps.metadata.outputs.sha_tag }}" \
-            --tag "${{ steps.metadata.outputs.registry }}/${ECR_REPOSITORY}:latest" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
+            -t "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
             .
 
-      - name: Push Docker image
-        run: |
-          docker push "${{ steps.metadata.outputs.registry }}/${ECR_REPOSITORY}:${{ steps.metadata.outputs.sha_tag }}"
-          docker push "${{ steps.metadata.outputs.registry }}/${ECR_REPOSITORY}:latest"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
