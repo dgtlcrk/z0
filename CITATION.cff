@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use z0, please cite this software."
+title: "z0: IRC Network Automation and Diagnostics"
+type: software
+authors:
+  - family-names: "Brown"
+    given-names: "Lorenzo"
+    alias: "dgtlcrk"
+version: 1.1.0
+date-released: 2026-07-22
+license: Apache-2.0
+repository-code: "https://github.com/dgtlcrk/z0"
+url: "https://github.com/dgtlcrk/z0"
+abstract: >-
+  A container-first IRC network automation and diagnostics bot supporting
+  environment-driven identities, system diagnostics, network commands,
+  Raspberry Pi deployments, and AWS deployments.

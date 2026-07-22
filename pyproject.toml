@@ -11,7 +11,10 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
 authors = [
-  { name = "dgtlcrk" }
+  { name = "Lorenzo Brown", email = "5753151+dgtlcrk@users.noreply.github.com" }
+]
+maintainers = [
+  { name = "Lorenzo Brown", email = "5753151+dgtlcrk@users.noreply.github.com" }
 ]
 keywords = [
   "automation",
