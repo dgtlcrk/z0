@@ -8,6 +8,7 @@ from z0.commands import core
 from z0.commands import network as network_commands
 from z0.commands import system as system_commands
 from z0.config import config
+from z0.config import BOT_NAME
 
 MAX_IRC_MESSAGE_LENGTH = 350
 
@@ -102,7 +103,7 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
 
 def run() -> None:
     print(
-        f"Starting z0: server={config.server}:{config.port} "
+        f"Starting {BOT_NAME}: server={config.server}:{config.port} "
         f"nick={config.nickname} channel={config.channel}",
         flush=True,
     )

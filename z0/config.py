@@ -21,9 +21,11 @@ class Config:
         return cls(
             server=os.getenv("IRC_SERVER", "irc.prison.net"),
             port=int(os.getenv("IRC_PORT", "6667")),
-            nickname=os.getenv("IRC_NICK", "z0"),
+            nickname=os.getenv("IRC_NICK", os.getenv("BOT_NAME", "z0")),
             channel=os.getenv("IRC_CHANNEL", "#skipland"),
         )
 
 
 config = Config.from_env()
+
+BOT_NAME = os.getenv("BOT_NAME", "z0")
