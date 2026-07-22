@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import platform
 import time
+from z0.config import BOT_NAME
 
 START_TIME = time.monotonic()
 
@@ -37,6 +38,6 @@ def uptime() -> str:
 def about() -> str:
     """Return general information about z0."""
     return (
-        f"z0 • Python {platform.python_version()} • "
+        f"{BOT_NAME} • Python {platform.python_version()} • "
         "Network Automation Platform"
     )
