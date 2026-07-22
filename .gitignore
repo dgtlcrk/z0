@@ -70,3 +70,6 @@ Thumbs.db
 # IDE settings
 .idea/
 .vscode/
+
+# Python package build metadata
+*.egg-info/
