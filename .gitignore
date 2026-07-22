@@ -23,3 +23,13 @@ crash.log
 .idea/
 .DS_Store
 Thumbs.db
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+crash.log
+*.tfvars
+*.tfvars.json
