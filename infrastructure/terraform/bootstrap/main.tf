@@ -1,5 +1,12 @@
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "z0-terraform-state-${var.aws_account_id}"
+
+  tags = {
+    Name        = "z0 Terraform State"
+    Environment = "shared"
+    Project     = "z0"
+    ManagedBy   = "Terraform"
+  }
 }
 
 resource "aws_s3_bucket_versioning" "terraform_state" {
@@ -24,8 +31,8 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
   block_public_acls       = true
-  ignore_public_acls      = true
   block_public_policy     = true
+  ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
@@ -35,6 +42,12 @@ resource "aws_ecr_repository" "z0" {
 
   image_scanning_configuration {
     scan_on_push = true
+  }
+
+  tags = {
+    Project     = "z0"
+    ManagedBy   = "Terraform"
+    Environment = "shared"
   }
 }
 
@@ -76,8 +89,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:dgtlcrk/z0:ref:refs/heads/main",
-        "repo:dgtlcrk/z0:ref:refs/heads/feature/aws-foundation"
+        "repo:dgtlcrk/z0:*"
       ]
     }
   }
