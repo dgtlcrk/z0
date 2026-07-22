@@ -1,4 +1,4 @@
-"""Backward-compatible entry point for the z0_n3t banner."""
+"""Backward-compatible entry point for the z0_n3t dashboard."""
 
 from z0.botops.banner import main
 from z0.botops.render import render_banner
