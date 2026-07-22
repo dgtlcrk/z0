@@ -30,6 +30,7 @@ The project uses semantic versioning for release tags.
 - Automated core-command tests
 - Automated network-input validation tests
 - Comprehensive project README
+- Apache License 2.0
 
 ### Changed
 
