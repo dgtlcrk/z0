@@ -1,35 +1,75 @@
 # Python
 __pycache__/
 *.py[cod]
-.venv/
+*$py.class
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-!*.tfvars.example
-.terraform.lock.hcl
-crash.log
+# Python environments
+.venv/
+venv/
+env/
 
-# Environment and secrets
+# Local application configuration
 .env
 .env.*
 !.env.example
 
-# Editors and operating systems
-.vscode/
-.idea/
+# Terraform working directories
+**/.terraform/
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Terraform plans
+*.tfplan
+*.plan
+
+# Terraform variable files
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Preserve public examples
+!terraform.tfvars.example
+!*.tfvars.example
+
+# Terraform crash and override files
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local keys and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+credentials
+credentials.json
+
+# Temporary and backup files
+*.bak
+*.backup
+*.identity-backup
+*.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
 
-# Terraform
-**/.terraform/*
-*.tfstate
-*.tfstate.*
-*.tfplan
-.terraform.lock.hcl
-crash.log
-*.tfvars
-*.tfvars.json
+# IDE settings
+.idea/
+.vscode/
+
+# Python package build metadata
+*.egg-info/

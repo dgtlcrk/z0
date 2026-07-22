@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
 import platform
 import shutil
 import socket
+from datetime import datetime
 
 
 def hostname() -> str:
