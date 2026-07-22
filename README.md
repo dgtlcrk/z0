@@ -296,6 +296,11 @@ Security reporting instructions will be maintained in
 
 Release history is available in [`CHANGELOG.md`](CHANGELOG.md).
 
+## Author
+
+Created and maintained by **Lorenzo Brown**
+([@dgtlcrk](https://github.com/dgtlcrk)).
+
 ## License
 
 Licensed under the Apache License, Version 2.0.
