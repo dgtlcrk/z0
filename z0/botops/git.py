@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import subprocess
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -13,6 +14,10 @@ class GitInfo:
     branch: str
     commit: str
     status: str
+    remote: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 def _run_git(project_root: Path, *arguments: str) -> str | None:
@@ -38,6 +43,7 @@ def collect_git_info(project_root: Path) -> GitInfo:
     branch = _run_git(project_root, "branch", "--show-current")
     commit = _run_git(project_root, "rev-parse", "--short", "HEAD")
     porcelain = _run_git(project_root, "status", "--porcelain")
+    remote = _run_git(project_root, "remote", "get-url", "origin")
 
     if porcelain is None:
         status = "N/A"
@@ -48,7 +54,8 @@ def collect_git_info(project_root: Path) -> GitInfo:
 
     return GitInfo(
         repository=project_root.name,
-        branch=branch or "N/A",
+        branch=branch or "DETACHED",
         commit=commit or "N/A",
         status=status,
+        remote=remote or "N/A",
     )
