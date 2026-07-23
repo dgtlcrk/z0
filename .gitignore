@@ -76,3 +76,5 @@ Thumbs.db
 
 # Local BotOps backups
 .botops-backup-*/
+
+.z0-backups/
