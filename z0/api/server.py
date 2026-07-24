@@ -10,14 +10,14 @@ from http.server import (
     BaseHTTPRequestHandler,
     ThreadingHTTPServer,
 )
-from z0.config import config
-
 from typing import Any
 from urllib.parse import (
     parse_qs,
     urlparse,
 )
 
+from z0 import __version__
+from z0.config import config
 from z0.core import (
     PlatformSettings,
     to_jsonable,
@@ -26,7 +26,6 @@ from z0.dockerops import (
     DockerClient,
     docker_error_payload,
 )
-
 
 LOGGER = logging.getLogger("z0.api")
 
@@ -180,7 +179,7 @@ class Z0RequestHandler(
 ):
     """Request handler for the z0 API."""
 
-    server_version = "z0_n3t/1.1"
+    server_version = f"z0_n3t/{__version__}"
     protocol_version = "HTTP/1.1"
 
     def log_message(
@@ -430,7 +429,7 @@ class Z0RequestHandler(
                 {
                     "service": "z0_n3t API",
                     "status": "ONLINE",
-                    "version": "1.1",
+                    "version": __version__,
                     "endpoints": API_ENDPOINTS,
                 }
             )
