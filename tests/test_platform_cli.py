@@ -123,3 +123,14 @@ def test_job_time_with_microseconds_keeps_utc() -> None:
     )
 
     assert result == "2026-07-24 19:02:36 UTC"
+
+
+def test_unified_version_command(capsys) -> None:
+    from z0 import __version__
+    from z0.unified_cli import main
+
+    result = main(["version"])
+    output = capsys.readouterr().out
+
+    assert result == 0
+    assert output.strip() == f"z0_n3t {__version__}"

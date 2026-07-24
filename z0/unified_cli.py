@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from collections.abc import Sequence
 
+from z0 import __version__
+
 
 def _print_help() -> None:
     print(
@@ -17,6 +19,7 @@ Usage:
   z0 jobs
   z0 api
   z0 docker <command>
+  z0 version
 
 Docker commands:
   z0 docker status
@@ -56,6 +59,14 @@ def main(
         "help",
     }:
         _print_help()
+        return 0
+
+    if arguments[0] in {
+        "-V",
+        "--version",
+        "version",
+    }:
+        print(f"z0_n3t {__version__}")
         return 0
 
     if arguments[0] == "docker":
