@@ -19,6 +19,36 @@ def _print_json(value: Any) -> None:
     print(json.dumps(value, indent=2, sort_keys=True))
 
 
+def _print_adapters(records: list[dict[str, Any]]) -> None:
+    if not records:
+        print("No adapters configured.")
+        return
+
+    header = (
+        f"{'NAME':<16} "
+        f"{'STATE':<16} "
+        f"{'ENABLED':<9} "
+        f"{'CONNECTED':<11} "
+        f"{'DETAIL'}"
+    )
+
+    print("Adapters")
+    print(header)
+    print("-" * len(header))
+
+    for record in records:
+        enabled = "YES" if record.get("enabled") else "NO"
+        connected = "YES" if record.get("connected") else "NO"
+
+        print(
+            f"{str(record.get('name', '')):<16} "
+            f"{str(record.get('state', '')):<16} "
+            f"{enabled:<9} "
+            f"{connected:<11} "
+            f"{record.get('detail', '')}"
+        )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="z0-platform",
@@ -47,6 +77,11 @@ def build_parser() -> argparse.ArgumentParser:
     adapters.add_argument(
         "--connect",
         help="Attempt to connect a named adapter",
+    )
+    adapters.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
     )
 
     plugins = subparsers.add_parser(
@@ -135,9 +170,16 @@ def main() -> None:
             except RuntimeError as error:
                 print(error)
 
-        _print_json(
-            [status.to_dict() for status in registry.statuses()]
-        )
+        records = [
+            status.to_dict()
+            for status in registry.statuses()
+        ]
+
+        if args.json:
+            _print_json(records)
+        else:
+            _print_adapters(records)
+
         return
 
     if args.command == "plugins":
