@@ -8,7 +8,7 @@ from z0.botops.render import PROJECT_ROOT, render_banner
 from z0.botops.system import collect_system_info
 
 
-def test_config() -> BotOpsConfig:
+def make_test_config() -> BotOpsConfig:
     return BotOpsConfig(
         node_name="test-node",
         node_role="Test Automation",
@@ -26,7 +26,7 @@ def test_config() -> BotOpsConfig:
 def test_banner_contains_branding() -> None:
     banner = render_banner(
         include_health=False,
-        config=test_config(),
+        config=make_test_config(),
     )
 
     assert "z0_n3t" in banner
@@ -51,7 +51,7 @@ def test_git_collector_returns_repository_name() -> None:
 
 
 def test_node_detection_returns_configured_values() -> None:
-    node = detect_node(test_config())
+    node = detect_node(make_test_config())
 
     assert node.name == "test-node"
     assert node.role == "Test Automation"
@@ -68,3 +68,13 @@ def test_inventory_returns_network_identity() -> None:
 def test_project_root_exists() -> None:
     assert isinstance(PROJECT_ROOT, Path)
     assert PROJECT_ROOT.exists()
+
+
+def test_banner_can_hide_login_welcome() -> None:
+    banner = render_banner(
+        include_health=False,
+        include_welcome=False,
+        config=make_test_config(),
+    )
+
+    assert ">>> Welcome to z0_n3t" not in banner

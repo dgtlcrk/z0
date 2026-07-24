@@ -13,7 +13,6 @@ from z0.botops.node import detect_node
 from z0.botops.services import ServiceStatus, collect_services
 from z0.botops.system import collect_system_info
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WIDTH = 68
 
@@ -71,6 +70,7 @@ def _health_rows(statuses: list[HealthStatus]) -> list[tuple[str, str]]:
 def render_banner(
     *,
     include_health: bool = True,
+    include_welcome: bool = True,
     config: BotOpsConfig | None = None,
 ) -> str:
     config = config or load_config()
@@ -152,9 +152,15 @@ def render_banner(
                 ],
             ),
             "═" * WIDTH,
-            "",
-            ">>> Welcome to z0_n3t",
         ]
     )
+
+    if include_welcome:
+        lines.extend(
+            [
+                "",
+                ">>> Welcome to z0_n3t",
+            ]
+        )
 
     return "\n".join(lines)
