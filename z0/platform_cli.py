@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from typing import Any
 
 from z0.adapters.registry import build_adapter_registry
 from z0.api.server import serve
-from z0.config import config
 from z0.api.snapshot import build_snapshot
+from z0.botops.render import render_banner
+from z0.config import config
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
@@ -17,6 +19,144 @@ from z0.scheduler.engine import Scheduler
 def _print_json(value: Any) -> None:
     print(json.dumps(value, indent=2, sort_keys=True))
 
+
+def _print_adapters(records: list[dict[str, Any]]) -> None:
+    if not records:
+        print("No adapters configured.")
+        return
+
+    header = (
+        f"{'NAME':<16} "
+        f"{'STATE':<16} "
+        f"{'ENABLED':<9} "
+        f"{'CONNECTED':<11} "
+        f"{'DETAIL'}"
+    )
+
+    print("Adapters")
+    print(header)
+    print("-" * len(header))
+
+    for record in records:
+        enabled = "YES" if record.get("enabled") else "NO"
+        connected = "YES" if record.get("connected") else "NO"
+
+        print(
+            f"{str(record.get('name', '')):<16} "
+            f"{str(record.get('state', '')):<16} "
+            f"{enabled:<9} "
+            f"{connected:<11} "
+            f"{record.get('detail', '')}"
+        )
+
+
+
+def _print_plugins(records: list[dict[str, Any]]) -> None:
+    if not records:
+        print("No plugins discovered.")
+        return
+
+    header = (
+        f"{'NAME':<16} "
+        f"{'VERSION':<12} "
+        f"{'ENABLED':<9} "
+        f"{'DESCRIPTION'}"
+    )
+
+    print("Plugins")
+    print(header)
+    print("-" * len(header))
+
+    for record in records:
+        enabled = "YES" if record.get("enabled") else "NO"
+
+        print(
+            f"{str(record.get('name', '')):<16} "
+            f"{str(record.get('version', '')):<12} "
+            f"{enabled:<9} "
+            f"{record.get('description', '')}"
+        )
+
+
+def _format_job_interval(seconds: Any) -> str:
+    try:
+        value = int(seconds)
+    except (TypeError, ValueError):
+        return str(seconds or "-")
+
+    if value % 3600 == 0:
+        return f"{value // 3600}h"
+
+    if value % 60 == 0:
+        return f"{value // 60}m"
+
+    return f"{value}s"
+
+
+def _format_job_time(value: Any) -> str:
+    if not value:
+        return "-"
+
+    text = str(value)
+
+    try:
+        timestamp = datetime.fromisoformat(
+            text.replace("Z", "+00:00")
+        )
+    except ValueError:
+        return text
+
+    if timestamp.tzinfo is not None:
+        timestamp = timestamp.astimezone(
+            timezone.utc
+        )
+        return timestamp.strftime(
+            "%Y-%m-%d %H:%M:%S UTC"
+        )
+
+    return timestamp.strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+
+def _print_jobs(records: list[dict[str, Any]]) -> None:
+    print("Scheduler Jobs")
+    print("-" * 68)
+
+    if not records:
+        print("No scheduler jobs configured.")
+        return
+
+    for index, record in enumerate(records):
+        if index:
+            print()
+
+        enabled = "YES" if record.get("enabled") else "NO"
+
+        print(record.get("name", "Unnamed job"))
+        print(f"  Job ID    : {record.get('job_id', '-')}")
+        print(f"  Plugin    : {record.get('plugin', '-')}")
+        print(f"  Action    : {record.get('action', '-')}")
+        print(f"  Enabled   : {enabled}")
+        print(
+            "  Interval  : "
+            f"{_format_job_interval(record.get('interval_seconds'))}"
+        )
+        print(
+            "  Status    : "
+            f"{record.get('last_status') or 'PENDING'}"
+        )
+        print(
+            "  Last Run  : "
+            f"{_format_job_time(record.get('last_run'))}"
+        )
+        print(
+            "  Next Run  : "
+            f"{_format_job_time(record.get('next_run'))}"
+        )
+
+        if record.get("last_error"):
+            print(f"  Last Error: {record['last_error']}")
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -29,9 +169,14 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
-    subparsers.add_parser(
+    status = subparsers.add_parser(
         "status",
-        help="Display a complete JSON platform snapshot",
+        help="Display platform status",
+    )
+    status.add_argument(
+        "--json",
+        action="store_true",
+        help="Output the complete JSON platform snapshot",
     )
 
     adapters = subparsers.add_parser(
@@ -42,6 +187,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--connect",
         help="Attempt to connect a named adapter",
     )
+    adapters.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
 
     plugins = subparsers.add_parser(
         "plugins",
@@ -49,6 +199,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     plugins.add_argument("--run")
     plugins.add_argument("--action", default="status")
+    plugins.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
 
     jobs = subparsers.add_parser(
         "jobs",
@@ -59,7 +214,12 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
-    jobs_sub.add_parser("list")
+    list_jobs = jobs_sub.add_parser("list")
+    list_jobs.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
 
     add_job = jobs_sub.add_parser("add")
     add_job.add_argument("--name", required=True)
@@ -105,7 +265,15 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "status":
-        _print_json(build_snapshot())
+        if args.json:
+            _print_json(build_snapshot())
+        else:
+            print(
+                render_banner(
+                    include_welcome=False,
+                )
+            )
+
         return
 
     if args.command == "adapters":
@@ -121,9 +289,16 @@ def main() -> None:
             except RuntimeError as error:
                 print(error)
 
-        _print_json(
-            [status.to_dict() for status in registry.statuses()]
-        )
+        records = [
+            status.to_dict()
+            for status in registry.statuses()
+        ]
+
+        if args.json:
+            _print_json(records)
+        else:
+            _print_adapters(records)
+
         return
 
     if args.command == "plugins":
@@ -134,21 +309,31 @@ def main() -> None:
                 registry.execute(args.run, args.action)
             )
         else:
-            _print_json(
-                [
-                    metadata.to_dict()
-                    for metadata in registry.metadata()
-                ]
-            )
+            records = [
+                metadata.to_dict()
+                for metadata in registry.metadata()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                _print_plugins(records)
+
         return
 
     if args.command == "jobs":
         scheduler = Scheduler()
 
         if args.jobs_command == "list":
-            _print_json(
-                [job.to_dict() for job in scheduler.list_jobs()]
-            )
+            records = [
+                job.to_dict()
+                for job in scheduler.list_jobs()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                _print_jobs(records)
         elif args.jobs_command == "add":
             job = scheduler.add_job(
                 name=args.name,
