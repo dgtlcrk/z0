@@ -78,3 +78,5 @@ Thumbs.db
 .botops-backup-*/
 
 .z0-backups/
+build/
+dist/
