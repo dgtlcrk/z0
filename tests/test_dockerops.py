@@ -9,6 +9,7 @@ from typing import Any
 from unittest.mock import patch
 from urllib.request import urlopen
 
+from z0 import __version__
 from z0.core import CommandResult
 from z0.dockerops import DockerClient
 
@@ -433,7 +434,7 @@ class DockerApiTests(unittest.TestCase):
 
             self.assertEqual(
                 root_payload["version"],
-                "1.1",
+                __version__,
             )
             self.assertIn(
                 "/api/docker",

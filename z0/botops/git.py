@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -39,11 +40,51 @@ def _run_git(project_root: Path, *arguments: str) -> str | None:
         return None
 
 
+def _resolve_git_root(project_root: Path) -> Path:
+    candidates = (
+        project_root,
+        Path.cwd(),
+        Path(sys.prefix).parent,
+    )
+
+    for candidate in candidates:
+        root = _run_git(
+            candidate,
+            "rev-parse",
+            "--show-toplevel",
+        )
+
+        if root:
+            return Path(root)
+
+    return project_root
+
+
 def collect_git_info(project_root: Path) -> GitInfo:
-    branch = _run_git(project_root, "branch", "--show-current")
-    commit = _run_git(project_root, "rev-parse", "--short", "HEAD")
-    porcelain = _run_git(project_root, "status", "--porcelain")
-    remote = _run_git(project_root, "remote", "get-url", "origin")
+    git_root = _resolve_git_root(project_root)
+
+    branch = _run_git(
+        git_root,
+        "branch",
+        "--show-current",
+    )
+    commit = _run_git(
+        git_root,
+        "rev-parse",
+        "--short",
+        "HEAD",
+    )
+    porcelain = _run_git(
+        git_root,
+        "status",
+        "--porcelain",
+    )
+    remote = _run_git(
+        git_root,
+        "remote",
+        "get-url",
+        "origin",
+    )
 
     if porcelain is None:
         status = "N/A"
@@ -52,8 +93,16 @@ def collect_git_info(project_root: Path) -> GitInfo:
     else:
         status = "CLEAN"
 
+    repository = git_root.name
+
+    if repository in {
+        "site-packages",
+        "dist-packages",
+    }:
+        repository = "z0"
+
     return GitInfo(
-        repository=project_root.name,
+        repository=repository,
         branch=branch or "DETACHED",
         commit=commit or "N/A",
         status=status,
