@@ -49,6 +49,33 @@ def _print_adapters(records: list[dict[str, Any]]) -> None:
         )
 
 
+
+def _print_plugins(records: list[dict[str, Any]]) -> None:
+    if not records:
+        print("No plugins discovered.")
+        return
+
+    header = (
+        f"{'NAME':<16} "
+        f"{'VERSION':<12} "
+        f"{'ENABLED':<9} "
+        f"{'DESCRIPTION'}"
+    )
+
+    print("Plugins")
+    print(header)
+    print("-" * len(header))
+
+    for record in records:
+        enabled = "YES" if record.get("enabled") else "NO"
+
+        print(
+            f"{str(record.get('name', '')):<16} "
+            f"{str(record.get('version', '')):<12} "
+            f"{enabled:<9} "
+            f"{record.get('description', '')}"
+        )
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="z0-platform",
@@ -90,6 +117,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     plugins.add_argument("--run")
     plugins.add_argument("--action", default="status")
+    plugins.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
 
     jobs = subparsers.add_parser(
         "jobs",
@@ -190,12 +222,16 @@ def main() -> None:
                 registry.execute(args.run, args.action)
             )
         else:
-            _print_json(
-                [
-                    metadata.to_dict()
-                    for metadata in registry.metadata()
-                ]
-            )
+            records = [
+                metadata.to_dict()
+                for metadata in registry.metadata()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                _print_plugins(records)
+
         return
 
     if args.command == "jobs":
