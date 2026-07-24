@@ -8,8 +8,9 @@ from typing import Any
 
 from z0.adapters.registry import build_adapter_registry
 from z0.api.server import serve
-from z0.config import config
 from z0.api.snapshot import build_snapshot
+from z0.botops.render import render_banner
+from z0.config import config
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
@@ -29,9 +30,14 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
-    subparsers.add_parser(
+    status = subparsers.add_parser(
         "status",
-        help="Display a complete JSON platform snapshot",
+        help="Display platform status",
+    )
+    status.add_argument(
+        "--json",
+        action="store_true",
+        help="Output the complete JSON platform snapshot",
     )
 
     adapters = subparsers.add_parser(
@@ -105,7 +111,15 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "status":
-        _print_json(build_snapshot())
+        if args.json:
+            _print_json(build_snapshot())
+        else:
+            print(
+                render_banner(
+                    include_welcome=False,
+                )
+            )
+
         return
 
     if args.command == "adapters":
