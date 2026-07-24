@@ -24,3 +24,11 @@ def test_nickname_defaults_to_bot_name(monkeypatch):
     config = Config.from_env()
 
     assert config.nickname == "cloud-z0"
+
+
+def test_config_supports_platform_mapping_access():
+    config = Config.from_env()
+
+    assert config["api"]["host"] == "127.0.0.1"
+    assert config["api"]["port"] == 8081
+    assert config["irc"]["enabled"] is True
