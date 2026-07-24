@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime, timezone
 from typing import Any
 
 from z0.adapters.registry import build_adapter_registry
@@ -76,6 +77,87 @@ def _print_plugins(records: list[dict[str, Any]]) -> None:
             f"{record.get('description', '')}"
         )
 
+
+def _format_job_interval(seconds: Any) -> str:
+    try:
+        value = int(seconds)
+    except (TypeError, ValueError):
+        return str(seconds or "-")
+
+    if value % 3600 == 0:
+        return f"{value // 3600}h"
+
+    if value % 60 == 0:
+        return f"{value // 60}m"
+
+    return f"{value}s"
+
+
+def _format_job_time(value: Any) -> str:
+    if not value:
+        return "-"
+
+    text = str(value)
+
+    try:
+        timestamp = datetime.fromisoformat(
+            text.replace("Z", "+00:00")
+        )
+    except ValueError:
+        return text
+
+    if timestamp.tzinfo is not None:
+        timestamp = timestamp.astimezone(
+            timezone.utc
+        )
+        return timestamp.strftime(
+            "%Y-%m-%d %H:%M:%S UTC"
+        )
+
+    return timestamp.strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+
+def _print_jobs(records: list[dict[str, Any]]) -> None:
+    print("Scheduler Jobs")
+    print("-" * 68)
+
+    if not records:
+        print("No scheduler jobs configured.")
+        return
+
+    for index, record in enumerate(records):
+        if index:
+            print()
+
+        enabled = "YES" if record.get("enabled") else "NO"
+
+        print(record.get("name", "Unnamed job"))
+        print(f"  Job ID    : {record.get('job_id', '-')}")
+        print(f"  Plugin    : {record.get('plugin', '-')}")
+        print(f"  Action    : {record.get('action', '-')}")
+        print(f"  Enabled   : {enabled}")
+        print(
+            "  Interval  : "
+            f"{_format_job_interval(record.get('interval_seconds'))}"
+        )
+        print(
+            "  Status    : "
+            f"{record.get('last_status') or 'PENDING'}"
+        )
+        print(
+            "  Last Run  : "
+            f"{_format_job_time(record.get('last_run'))}"
+        )
+        print(
+            "  Next Run  : "
+            f"{_format_job_time(record.get('next_run'))}"
+        )
+
+        if record.get("last_error"):
+            print(f"  Last Error: {record['last_error']}")
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="z0-platform",
@@ -132,7 +214,12 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
-    jobs_sub.add_parser("list")
+    list_jobs = jobs_sub.add_parser("list")
+    list_jobs.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
 
     add_job = jobs_sub.add_parser("add")
     add_job.add_argument("--name", required=True)
@@ -238,9 +325,15 @@ def main() -> None:
         scheduler = Scheduler()
 
         if args.jobs_command == "list":
-            _print_json(
-                [job.to_dict() for job in scheduler.list_jobs()]
-            )
+            records = [
+                job.to_dict()
+                for job in scheduler.list_jobs()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                _print_jobs(records)
         elif args.jobs_command == "add":
             job = scheduler.add_job(
                 name=args.name,
