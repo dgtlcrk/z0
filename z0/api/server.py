@@ -10,6 +10,8 @@ from http.server import (
     BaseHTTPRequestHandler,
     ThreadingHTTPServer,
 )
+from z0.config import config
+
 from typing import Any
 from urllib.parse import (
     parse_qs,
@@ -516,8 +518,8 @@ def create_server(
 
 
 def serve(
-    host: str = "127.0.0.1",
-    port: int = 8081,
+    host: str = config["api"]["host"],
+    port: int = config["api"]["port"],
 ) -> None:
     """Run the z0 API server."""
 

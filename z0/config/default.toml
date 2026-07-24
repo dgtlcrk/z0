@@ -1,0 +1,20 @@
+[api]
+host = "127.0.0.1"
+port = 8081
+
+[logging]
+level = "INFO"
+
+[docker]
+enabled = true
+
+[discord]
+enabled = false
+
+[irc]
+enabled = true
+server = "irc.prison.net"
+port = 6697
+
+[aws]
+enabled = false
