@@ -74,3 +74,52 @@ def test_plugins_human_output(capsys) -> None:
     assert "1.0.0" in output
     assert "YES" in output
     assert "Check configured infrastructure targets" in output
+
+
+def test_jobs_list_accepts_json_flag() -> None:
+    args = build_parser().parse_args(
+        ["jobs", "list", "--json"]
+    )
+
+    assert args.command == "jobs"
+    assert args.jobs_command == "list"
+    assert args.json is True
+
+
+def test_jobs_human_output(capsys) -> None:
+    from z0.platform_cli import _print_jobs
+
+    _print_jobs(
+        [
+            {
+                "job_id": "5b8b86cc9fd8",
+                "name": "Infrastructure health",
+                "plugin": "health",
+                "action": "check",
+                "enabled": True,
+                "interval_seconds": 300,
+                "last_status": "SUCCESS",
+                "last_run": "2026-07-24T18:37:33+00:00",
+                "next_run": "2026-07-24T18:42:33+00:00",
+                "last_error": None,
+            }
+        ]
+    )
+
+    output = capsys.readouterr().out
+
+    assert "Scheduler Jobs" in output
+    assert "Infrastructure health" in output
+    assert "5b8b86cc9fd8" in output
+    assert "5m" in output
+    assert "SUCCESS" in output
+
+
+def test_job_time_with_microseconds_keeps_utc() -> None:
+    from z0.platform_cli import _format_job_time
+
+    result = _format_job_time(
+        "2026-07-24T19:02:36.123456+00:00"
+    )
+
+    assert result == "2026-07-24 19:02:36 UTC"
