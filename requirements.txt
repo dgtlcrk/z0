@@ -1,4 +1,4 @@
-annotated-doc==0.0.4
+annotated-doc==0.0.5
 irc==20.5.0
 jaraco.collections==5.2.1
 jaraco.context==6.1.2
