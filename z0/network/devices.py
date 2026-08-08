@@ -7,6 +7,7 @@ import socket
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from z0.network.discovery import discover_hosts
 from z0.network.gateway import collect_gateway_status
 from z0.network.neighbors import collect_neighbors
 from z0.network.status import collect_network_status
@@ -41,33 +42,39 @@ def _is_ipv4_lan_address(
 ) -> bool:
     try:
         address = ipaddress.ip_address(ip_address)
-        subnet = ipaddress.ip_network(network, strict=False)
+        subnet = ipaddress.ip_network(
+            network,
+            strict=False,
+        )
     except ValueError:
         return False
 
-    return address.version == 4 and address in subnet
+    return (
+        address.version == 4
+        and address in subnet
+    )
+
+
+def _merge_sources(*sources: str) -> str:
+    result: list[str] = []
+
+    for source in sources:
+        for item in source.split("+"):
+            if item and item not in result:
+                result.append(item)
+
+    return "+".join(result)
 
 
 def collect_devices() -> list[NetworkDevice]:
     network_status = collect_network_status()
     gateway_status = collect_gateway_status()
 
-    records: dict[str, NetworkDevice] = {}
-
     local_ip = network_status.ipv4_address
     gateway_ip = network_status.gateway
     lan_network = network_status.network
 
-    if local_ip:
-        records[local_ip] = NetworkDevice(
-            ip_address=local_ip,
-            mac_address="",
-            hostname=socket.gethostname(),
-            interface=network_status.interface,
-            state="ONLINE",
-            source="local_host",
-            role="local_node",
-        )
+    records: dict[str, NetworkDevice] = {}
 
     for neighbor in collect_neighbors():
         if not _is_ipv4_lan_address(
@@ -84,14 +91,14 @@ def collect_devices() -> list[NetworkDevice]:
 
         if neighbor.ip_address == gateway_ip:
             role = "gateway"
-            source = "linux_neighbor+gateway"
 
             if gateway_status.model:
                 hostname = gateway_status.model
 
-        if neighbor.ip_address == local_ip:
-            role = "local_node"
-            source = "local_host+linux_neighbor"
+            source = _merge_sources(
+                source,
+                "gateway",
+            )
 
         records[neighbor.ip_address] = NetworkDevice(
             ip_address=neighbor.ip_address,
@@ -101,6 +108,78 @@ def collect_devices() -> list[NetworkDevice]:
             state=neighbor.state,
             source=source,
             role=role,
+        )
+
+    for host in discover_hosts():
+        if not _is_ipv4_lan_address(
+            host.ip_address,
+            lan_network,
+        ):
+            continue
+
+        existing = records.get(
+            host.ip_address
+        )
+
+        mac_address = host.mac_address
+        hostname = host.hostname
+        interface = host.interface
+        source = host.source
+        role = "neighbor"
+
+        if existing is not None:
+            if not mac_address:
+                mac_address = existing.mac_address
+
+            if not hostname:
+                hostname = existing.hostname
+
+            if not interface:
+                interface = existing.interface
+
+            source = _merge_sources(
+                existing.source,
+                source,
+            )
+
+        if host.ip_address == gateway_ip:
+            role = "gateway"
+
+            if gateway_status.model:
+                hostname = gateway_status.model
+
+            source = _merge_sources(
+                source,
+                "gateway",
+            )
+
+        if host.ip_address == local_ip:
+            role = "local_node"
+            hostname = socket.gethostname()
+            source = _merge_sources(
+                source,
+                "local_host",
+            )
+
+        records[host.ip_address] = NetworkDevice(
+            ip_address=host.ip_address,
+            mac_address=mac_address,
+            hostname=hostname,
+            interface=interface,
+            state="ONLINE",
+            source=source,
+            role=role,
+        )
+
+    if local_ip and local_ip not in records:
+        records[local_ip] = NetworkDevice(
+            ip_address=local_ip,
+            mac_address="",
+            hostname=socket.gethostname(),
+            interface=network_status.interface,
+            state="ONLINE",
+            source="local_host",
+            role="local_node",
         )
 
     return sorted(
