@@ -6,8 +6,8 @@ import importlib
 import pkgutil
 from typing import Any
 
-from z0.plugins.base import Plugin, PluginMetadata
 from z0.plugins import builtin
+from z0.plugins.base import Plugin, PluginMetadata
 
 
 class PluginRegistry:

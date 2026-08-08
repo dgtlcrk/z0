@@ -12,7 +12,6 @@ from .exceptions import ConfigurationError
 from .paths import PlatformPaths
 from .validation import validate_port
 
-
 T = TypeVar("T")
 
 TRUE_VALUES = frozenset(
