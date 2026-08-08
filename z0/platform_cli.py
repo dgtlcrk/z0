@@ -14,6 +14,7 @@ from z0.botops.render import render_banner
 from z0.config import config
 from z0.network import collect_network_status
 from z0.network.gateway import collect_gateway_status
+from z0.network.neighbors import collect_neighbors
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
@@ -293,6 +294,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output structured JSON",
     )
 
+
+    network_neighbors = network_sub.add_parser(
+        "neighbors",
+        help="Show kernel network neighbors",
+    )
+
+    network_neighbors.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
+
     return parser
 
 
@@ -460,6 +473,35 @@ def main() -> None:
                 print(f"TX Errors       : {record['transmit_errors']}")
                 print(f"PON Status      : {record['pon_status']}")
                 print(f"UNI Status      : {record['uni_status']}")
+
+        elif args.network_command == "neighbors":
+            records = [
+                neighbor.to_dict()
+                for neighbor in collect_neighbors()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                print("Network Neighbors")
+                print(
+                    f"{'IP ADDRESS':<42} "
+                    f"{'MAC ADDRESS':<18} "
+                    f"{'INTERFACE':<10} "
+                    f"{'STATE'}"
+                )
+                print("-" * 88)
+
+                if not records:
+                    print("No network neighbors found.")
+                else:
+                    for record in records:
+                        print(
+                            f"{record['ip_address']:<42} "
+                            f"{record['mac_address']:<18} "
+                            f"{record['interface']:<10} "
+                            f"{record['state']}"
+                        )
 
         return
 
