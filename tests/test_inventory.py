@@ -60,10 +60,7 @@ def test_inventory_round_trip(tmp_path: Path) -> None:
         )
     }
 
-    save_inventory(
-        inventory,
-        path,
-    )
+    save_inventory(inventory, path)
 
     loaded = load_inventory(path)
 

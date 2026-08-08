@@ -13,8 +13,8 @@ from z0.api.snapshot import build_snapshot
 from z0.botops.render import render_banner
 from z0.config import config
 from z0.network import collect_network_status
-from z0.network.discovery import discover_hosts
 from z0.network.devices import collect_devices
+from z0.network.discovery import discover_hosts
 from z0.network.gateway import collect_gateway_status
 from z0.network.inventory import inventory_devices, update_inventory
 from z0.network.neighbors import collect_neighbors
