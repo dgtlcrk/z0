@@ -5,6 +5,46 @@ All notable changes to z0 are documented in this file.
 The project uses semantic versioning for release tags.
 
 ## Unreleased
+
+## 1.2.0 - 2026-08-08
+
+### Added
+
+- Linux-native network edge status collection
+- `z0 network status` for local interface, IPv4 network, gateway, DNS, Internet, and IPv6 status
+- `z0 network gateway` for AT&T BGW gateway health and WAN information
+- AT&T BGW320 gateway discovery including model, software, hardware, WAN, DNS, MTU, PON, and UNI status
+- `z0 network neighbors` for Linux neighbor-table inspection
+- `z0 network discover` for active IPv4 LAN discovery
+- `z0 network devices` for consolidated LAN device visibility
+- Persistent network inventory stored under the z0 user configuration directory
+- `z0 inventory update` for refreshing persistent LAN inventory
+- `z0 inventory list` for viewing known network devices
+- JSON output support for network and inventory commands
+- Device first-seen and last-seen tracking
+- ONLINE, OFFLINE, and STALE inventory state tracking
+- Automated tests for gateway, neighbor, discovery, device, inventory, and CLI functionality
+
+### Changed
+
+- Unified `z0` CLI help now documents network and inventory commands
+- LAN device collection combines local host, Linux neighbor, gateway, and active discovery information
+- Network inventory preserves devices across discovery runs
+- Device discovery ignores incomplete neighbor observations without usable link-layer identity
+- Project-wide Ruff formatting and import ordering normalized
+
+### Verified
+
+- AT&T BGW320-500 gateway integration verified on a live fiber connection
+- Local IPv4 network and default gateway detection verified
+- LAN neighbor and active host discovery verified
+- Persistent inventory successfully tracks discovered devices across scans
+- Human-readable and JSON network command output verified
+- Full automated test suite passes with 83 tests
+- Ruff checks pass
+- `git diff --check` passes
+- Raspberry Pi deployment verified on Ubuntu 24.04 LTS
+
 ## 1.1.1 - 2026-07-24
 
 ### Added
