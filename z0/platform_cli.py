@@ -12,6 +12,7 @@ from z0.api.server import serve
 from z0.api.snapshot import build_snapshot
 from z0.botops.render import render_banner
 from z0.config import config
+from z0.network import collect_network_status
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
@@ -257,6 +258,28 @@ def build_parser() -> argparse.ArgumentParser:
         default=config["api"]["port"],
     )
 
+
+    network = subparsers.add_parser(
+        "network",
+        help="Show network edge information",
+    )
+
+    network_sub = network.add_subparsers(
+        dest="network_command",
+        required=True,
+    )
+
+    network_status = network_sub.add_parser(
+        "status",
+        help="Show network status",
+    )
+
+    network_status.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
+
     return parser
 
 
@@ -353,6 +376,39 @@ def main() -> None:
             _print_json(scheduler.run_due())
         elif args.jobs_command == "daemon":
             scheduler.serve_forever(args.poll)
+
+        return
+
+    if args.command == "network":
+        if args.network_command == "status":
+            record = collect_network_status().to_dict()
+
+            if args.json:
+                _print_json(record)
+            else:
+                print("Network")
+                print("-" * 60)
+                print(f"Interface       : {record['interface']}")
+                print(f"IPv4 Address    : {record['ipv4_address']}")
+                print(f"Network         : {record['network']}")
+                print(f"Gateway         : {record['gateway']}")
+                print(
+                    "Gateway Status  : "
+                    f"{'ONLINE' if record['gateway_reachable'] else 'OFFLINE'}"
+                )
+                print(f"DNS Server      : {record['dns_server']}")
+                print(
+                    "DNS             : "
+                    f"{'HEALTHY' if record['dns_working'] else 'FAILED'}"
+                )
+                print(
+                    "IPv4 Internet   : "
+                    f"{'ONLINE' if record['ipv4_internet'] else 'OFFLINE'}"
+                )
+                print(
+                    "IPv6            : "
+                    f"{'AVAILABLE' if record['ipv6_available'] else 'UNAVAILABLE'}"
+                )
 
         return
 
