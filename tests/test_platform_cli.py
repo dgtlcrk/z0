@@ -174,3 +174,13 @@ def test_network_devices_accepts_json_flag() -> None:
     assert args.command == "network"
     assert args.network_command == "devices"
     assert args.json is True
+
+
+def test_network_discover_accepts_json_flag() -> None:
+    args = build_parser().parse_args(
+        ["network", "discover", "--json"]
+    )
+
+    assert args.command == "network"
+    assert args.network_command == "discover"
+    assert args.json is True
