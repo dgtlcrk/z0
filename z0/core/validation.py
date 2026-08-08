@@ -8,7 +8,6 @@ from pathlib import Path
 
 from .exceptions import ValidationError
 
-
 HOST_LABEL_PATTERN = re.compile(
     r"^(?!-)[A-Za-z0-9-]{1,63}(?<!-)$"
 )

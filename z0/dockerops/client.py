@@ -22,7 +22,6 @@ from .models import (
     DockerSummary,
 )
 
-
 CommandRunner = Callable[..., CommandResult]
 
 _CONTAINER_REFERENCE = re.compile(
