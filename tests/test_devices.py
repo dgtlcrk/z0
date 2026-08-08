@@ -54,6 +54,4 @@ def test_merge_sources_removes_duplicates() -> None:
         "gateway",
     )
 
-    assert result == (
-        "linux_neighbor+icmp+gateway"
-    )
+    assert result == "linux_neighbor+icmp+gateway"
