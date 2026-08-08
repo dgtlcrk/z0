@@ -134,3 +134,13 @@ def test_unified_version_command(capsys) -> None:
 
     assert result == 0
     assert output.strip() == f"z0_n3t {__version__}"
+
+
+def test_network_status_accepts_json_flag() -> None:
+    args = build_parser().parse_args(
+        ["network", "status", "--json"]
+    )
+
+    assert args.command == "network"
+    assert args.network_command == "status"
+    assert args.json is True
