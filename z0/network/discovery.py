@@ -12,7 +12,6 @@ from typing import Any
 from z0.network.neighbors import collect_neighbors
 from z0.network.status import collect_network_status
 
-
 MAX_WORKERS = 32
 
 
