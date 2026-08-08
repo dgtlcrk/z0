@@ -13,6 +13,7 @@ from z0.api.snapshot import build_snapshot
 from z0.botops.render import render_banner
 from z0.config import config
 from z0.network import collect_network_status
+from z0.network.gateway import collect_gateway_status
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
@@ -280,6 +281,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output structured JSON",
     )
 
+
+    network_gateway = network_sub.add_parser(
+        "gateway",
+        help="Show Internet gateway status",
+    )
+
+    network_gateway.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
+
     return parser
 
 
@@ -409,6 +422,44 @@ def main() -> None:
                     "IPv6            : "
                     f"{'AVAILABLE' if record['ipv6_available'] else 'UNAVAILABLE'}"
                 )
+
+        elif args.network_command == "gateway":
+            record = collect_gateway_status().to_dict()
+
+            if args.json:
+                _print_json(record)
+            else:
+                print("Internet Gateway")
+                print("-" * 60)
+                print(f"Address         : {record['gateway']}")
+                print(
+                    "Status          : "
+                    f"{'ONLINE' if record['reachable'] else 'OFFLINE'}"
+                )
+                print(f"Manufacturer    : {record['manufacturer']}")
+                print(f"Model           : {record['model']}")
+                print(f"Software        : {record['software_version']}")
+                print(f"Hardware        : {record['hardware_version']}")
+                print()
+                print("WAN")
+                print("-" * 60)
+                print(f"Source          : {record['wan_source']}")
+                print(f"Connection      : {record['wan_status']}")
+                print(f"Network Type    : {record['network_type']}")
+                print(f"Public IPv4     : {record['public_ipv4']}")
+                print(f"Upstream GW     : {record['upstream_gateway']}")
+                print(f"Primary DNS     : {record['primary_dns']}")
+                print(f"Secondary DNS   : {record['secondary_dns']}")
+                print(f"MTU             : {record['mtu']}")
+                print()
+                print("Health")
+                print("-" * 60)
+                print(f"RX Drops        : {record['receive_drops']}")
+                print(f"TX Drops        : {record['transmit_drops']}")
+                print(f"RX Errors       : {record['receive_errors']}")
+                print(f"TX Errors       : {record['transmit_errors']}")
+                print(f"PON Status      : {record['pon_status']}")
+                print(f"UNI Status      : {record['uni_status']}")
 
         return
 
