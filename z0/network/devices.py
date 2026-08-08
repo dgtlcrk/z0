@@ -80,6 +80,12 @@ def collect_devices() -> list[NetworkDevice]:
         ):
             continue
 
+        # FAILED/INCOMPLETE ARP probes can create neighbor-table
+        # entries without a link-layer identity. They are observations
+        # of an attempted lookup, not evidence of a real LAN device.
+        if not neighbor.mac_address:
+            continue
+
         role = "neighbor"
         source = "linux_neighbor"
         hostname = _hostname_for_ip(
