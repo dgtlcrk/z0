@@ -13,6 +13,7 @@ from z0.api.snapshot import build_snapshot
 from z0.botops.render import render_banner
 from z0.config import config
 from z0.network import collect_network_status
+from z0.network.devices import collect_devices
 from z0.network.gateway import collect_gateway_status
 from z0.network.neighbors import collect_neighbors
 from z0.plugins.registry import build_plugin_registry
@@ -306,6 +307,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output structured JSON",
     )
 
+
+    network_devices = network_sub.add_parser(
+        "devices",
+        help="Show normalized LAN device inventory",
+    )
+
+    network_devices.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
+
     return parser
 
 
@@ -501,6 +514,39 @@ def main() -> None:
                             f"{record['mac_address']:<18} "
                             f"{record['interface']:<10} "
                             f"{record['state']}"
+                        )
+
+        elif args.network_command == "devices":
+            records = [
+                device.to_dict()
+                for device in collect_devices()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                print("LAN Devices")
+                print(
+                    f"{'IP ADDRESS':<16} "
+                    f"{'HOSTNAME':<24} "
+                    f"{'MAC ADDRESS':<18} "
+                    f"{'ROLE':<12} "
+                    f"{'STATE':<10} "
+                    f"{'SOURCE'}"
+                )
+                print("-" * 110)
+
+                if not records:
+                    print("No LAN devices found.")
+                else:
+                    for record in records:
+                        print(
+                            f"{record['ip_address']:<16} "
+                            f"{record['hostname']:<24} "
+                            f"{record['mac_address']:<18} "
+                            f"{record['role']:<12} "
+                            f"{record['state']:<10} "
+                            f"{record['source']}"
                         )
 
         return
