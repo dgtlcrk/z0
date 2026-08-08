@@ -184,3 +184,23 @@ def test_network_discover_accepts_json_flag() -> None:
     assert args.command == "network"
     assert args.network_command == "discover"
     assert args.json is True
+
+
+def test_inventory_list_accepts_json_flag() -> None:
+    args = build_parser().parse_args(
+        ["inventory", "list", "--json"]
+    )
+
+    assert args.command == "inventory"
+    assert args.inventory_command == "list"
+    assert args.json is True
+
+
+def test_inventory_update_accepts_json_flag() -> None:
+    args = build_parser().parse_args(
+        ["inventory", "update", "--json"]
+    )
+
+    assert args.command == "inventory"
+    assert args.inventory_command == "update"
+    assert args.json is True
