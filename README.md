@@ -18,6 +18,14 @@ an HTTP API, and IRC/BotOps integration.
 - Docker engine and container operations
 - HTTP JSON API
 - IRC/BotOps runtime
+- Linux-native network edge status
+- AT&T BGW320 gateway health and WAN monitoring
+- Linux neighbor-table visibility
+- Active IPv4 LAN discovery
+- Normalized LAN device inventory
+- Persistent network device inventory
+- Device first-seen and last-seen tracking
+- ONLINE, STALE, and OFFLINE device lifecycle state
 - Prometheus, Grafana, and Jenkins integration
 - Installable Python console commands
 - Automated tests and input validation
@@ -116,6 +124,94 @@ z0 plugins --json
 z0 jobs list
 z0 jobs list --json
 ```
+
+### Network Edge Status
+
+Show local network edge information:
+
+```bash
+z0 network status
+z0 network status --json
+```
+
+The command reports the active interface, local IPv4 address, connected
+network, default gateway, gateway reachability, DNS server, DNS health,
+IPv4 Internet connectivity, and IPv6 availability.
+
+### Internet Gateway
+
+Show the local Internet gateway and WAN status:
+
+```bash
+z0 network gateway
+z0 network gateway --json
+```
+
+The current AT&T BGW320 integration reports gateway identity, software and
+hardware versions, WAN source and connection state, public IPv4 address,
+upstream gateway, DNS servers, MTU, packet drops and errors, PON status,
+and UNI status.
+
+### Network Neighbors
+
+Show the Linux kernel neighbor table:
+
+```bash
+z0 network neighbors
+z0 network neighbors --json
+```
+
+This is the raw operational view and can include LAN, IPv6, and Docker
+neighbor entries.
+
+### LAN Discovery
+
+Actively discover reachable hosts on the directly connected IPv4 network:
+
+```bash
+z0 network discover
+z0 network discover --json
+```
+
+Discovery uses concurrent ICMP probing and correlates reachable hosts with
+Linux neighbor data and hostname information.
+
+### LAN Devices
+
+Show the normalized LAN device view:
+
+```bash
+z0 network devices
+z0 network devices --json
+```
+
+The device view combines local host information, active discovery, Linux
+neighbor observations, and gateway identity into normalized records.
+
+### Persistent Network Inventory
+
+Refresh persistent network inventory:
+
+```bash
+z0 inventory update
+```
+
+List known devices:
+
+```bash
+z0 inventory list
+z0 inventory list --json
+```
+
+Inventory is stored under:
+
+```text
+~/.config/z0/network_inventory.json
+```
+
+Persistent inventory retains device identity and state across discovery runs,
+including IP address, MAC address, hostname, role, source, first-seen time,
+last-seen time, and lifecycle state.
 
 ### Version
 
@@ -328,6 +424,13 @@ z0/
 |   |-- dockerops/
 |   |-- plugins/
 |   |-- scheduler/
+|   |-- network/
+|   |   |-- devices.py
+|   |   |-- discovery.py
+|   |   |-- gateway.py
+|   |   |-- inventory.py
+|   |   |-- neighbors.py
+|   |   `-- status.py
 |   |-- docker_cli.py
 |   |-- platform_cli.py
 |   `-- unified_cli.py
@@ -350,23 +453,28 @@ operations to untrusted users.
 
 ## Roadmap
 
-The next development phase focuses on network discovery and persistent device
-inventory.
+Network edge discovery and persistent device inventory were delivered in
+z0_n3t v1.2.0.
 
-Planned commands include:
+The next development phase focuses on turning discovered network endpoints
+into identifiable and manageable infrastructure.
+
+Planned capabilities include:
 
 ```text
-z0 discover
-z0 discover --subnet 192.168.1.0/24
-z0 inventory list
 z0 inventory show DEVICE
+z0 inventory new
+z0 inventory offline
 z0 device status DEVICE
 ```
 
 Later phases will add:
 
+- Device classification and managed-device onboarding
 - SSH device execution
-- Cisco automation
+- Cisco switch and router automation
+- Firewall integration
+- Configuration collection and backup
 - Palo Alto integration
 - F5 integration
 - AWS nodes
