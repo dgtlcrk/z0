@@ -49,10 +49,7 @@ def _is_ipv4_lan_address(
     except ValueError:
         return False
 
-    return (
-        address.version == 4
-        and address in subnet
-    )
+    return address.version == 4 and address in subnet
 
 
 def _merge_sources(*sources: str) -> str:
