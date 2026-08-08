@@ -19,6 +19,8 @@ Usage:
   z0 jobs
   z0 api
   z0 docker <command>
+  z0 network <command>
+  z0 inventory <command>
   z0 version
 
 Docker commands:
@@ -31,7 +33,24 @@ Docker commands:
   z0 docker logs CONTAINER
   z0 docker restart CONTAINER
 
+Network commands:
+  z0 network status
+  z0 network gateway
+  z0 network neighbors
+  z0 network discover
+  z0 network devices
+
+Inventory commands:
+  z0 inventory update
+  z0 inventory list
+  z0 inventory list --json
+
 Examples:
+  z0 network status
+  z0 network gateway
+  z0 network devices
+  z0 inventory update
+  z0 inventory list
   z0 docker status
   z0 docker ps --all
   z0 docker stats jenkins
