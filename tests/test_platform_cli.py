@@ -154,3 +154,13 @@ def test_network_gateway_accepts_json_flag() -> None:
     assert args.command == "network"
     assert args.network_command == "gateway"
     assert args.json is True
+
+
+def test_network_neighbors_accepts_json_flag() -> None:
+    args = build_parser().parse_args(
+        ["network", "neighbors", "--json"]
+    )
+
+    assert args.command == "network"
+    assert args.network_command == "neighbors"
+    assert args.json is True
