@@ -7,7 +7,6 @@ import socket
 from dataclasses import dataclass
 from pathlib import Path
 
-
 DEFAULT_CONFIG_PATH = Path.home() / ".config" / "z0" / "botops.env"
 
 

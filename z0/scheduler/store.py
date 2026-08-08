@@ -7,7 +7,6 @@ from pathlib import Path
 
 from z0.scheduler.models import Job
 
-
 DEFAULT_JOB_FILE = Path.home() / ".local" / "share" / "z0" / "jobs.json"
 
 
