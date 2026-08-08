@@ -16,6 +16,7 @@ from z0.network import collect_network_status
 from z0.network.discovery import discover_hosts
 from z0.network.devices import collect_devices
 from z0.network.gateway import collect_gateway_status
+from z0.network.inventory import inventory_devices, update_inventory
 from z0.network.neighbors import collect_neighbors
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
@@ -332,6 +333,39 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output structured JSON",
     )
 
+
+    inventory = subparsers.add_parser(
+        "inventory",
+        help="Manage persistent network inventory",
+    )
+
+    inventory_sub = inventory.add_subparsers(
+        dest="inventory_command",
+        required=True,
+    )
+
+    inventory_list = inventory_sub.add_parser(
+        "list",
+        help="List persistent network inventory",
+    )
+
+    inventory_list.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
+
+    inventory_update = inventory_sub.add_parser(
+        "update",
+        help="Refresh persistent network inventory",
+    )
+
+    inventory_update.add_argument(
+        "--json",
+        action="store_true",
+        help="Output structured JSON",
+    )
+
     return parser
 
 
@@ -595,6 +629,58 @@ def main() -> None:
 
                 print()
                 print(f"Reachable hosts: {len(records)}")
+
+        return
+
+    if args.command == "inventory":
+        if args.inventory_command == "update":
+            inventory = update_inventory()
+
+            records = [
+                device.to_dict()
+                for device in inventory.values()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                print(
+                    f"Inventory updated: "
+                    f"{len(records)} device(s)"
+                )
+
+        elif args.inventory_command == "list":
+            records = [
+                device.to_dict()
+                for device in inventory_devices()
+            ]
+
+            if args.json:
+                _print_json(records)
+            else:
+                print("Network Inventory")
+                print(
+                    f"{'IP ADDRESS':<16} "
+                    f"{'HOSTNAME':<30} "
+                    f"{'ROLE':<12} "
+                    f"{'STATE':<10} "
+                    f"{'FIRST SEEN':<27} "
+                    f"{'LAST SEEN'}"
+                )
+                print("-" * 125)
+
+                if not records:
+                    print("Inventory is empty.")
+                else:
+                    for record in records:
+                        print(
+                            f"{record['ip_address']:<16} "
+                            f"{record['hostname'][:30]:<30} "
+                            f"{record['role']:<12} "
+                            f"{record['state']:<10} "
+                            f"{record['first_seen']:<27} "
+                            f"{record['last_seen']}"
+                        )
 
         return
 
