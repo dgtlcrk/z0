@@ -30,6 +30,36 @@ def load_device_labels(path: Path = DEFAULT_LABELS_PATH) -> dict[str, str]:
     return result
 
 
+def is_generic_hostname(hostname: str) -> bool:
+    """Treat collector placeholders as unidentified, not named assets."""
+    name = hostname.strip().lower()
+    return not name or name.startswith("unknown")
+
+
+def identification(device: dict[str, object], labels: dict[str, str]) -> dict[str, object]:
+    """Derive an honest display identity without altering observed data."""
+    mac = str(device.get("mac_address") or "").lower()
+    ip = str(device.get("ip_address") or "")
+    hostname = str(device.get("hostname") or "").strip()
+    if mac in labels:
+        display = labels[mac]
+        source = "operator_label"
+    elif not is_generic_hostname(hostname):
+        display = hostname
+        source = "observed_hostname"
+    else:
+        display = f"Unidentified ({ip or mac or 'no address'})"
+        source = "unidentified"
+    # A locally administered MAC is not proof of a randomized address.
+    octet = mac.split(":", 1)[0]
+    local_mac = bool(_MAC.fullmatch(mac) and int(octet, 16) & 2)
+    return {
+        "display_name": display,
+        "identification_source": source,
+        "locally_administered_mac": local_mac,
+    }
+
+
 def label_devices(
     devices: list[dict[str, object]],
     labels: dict[str, str],
@@ -37,9 +67,6 @@ def label_devices(
     result = []
     for device in devices:
         updated = dict(device)
-        mac = str(device.get("mac_address", "")).lower()
-        updated["display_name"] = labels.get(mac) or device.get("hostname") or (
-            device.get("ip_address") or mac or "Unidentified device"
-        )
+        updated.update(identification(device, labels))
         result.append(updated)
     return result
