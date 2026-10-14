@@ -556,3 +556,19 @@ missing from a later scan become `NOT_OBSERVED`, **not OFFLINE**. The BGW320
 JSON is corrupt or has an unfamiliar schema, updates abort instead of wiping
 records. The command is manual/opt-in and does not install a scheduled task.
 
+
+### Read-only network state intelligence
+
+```bash
+z0 inventory assess
+z0 inventory assess --stale-hours 48
+z0 inventory assess --json
+```
+
+This command reads the v2 persistent inventory **without scanning or writing**.
+Previously independently reachable devices that were absent from the last scan
+for longer than the threshold are flagged `SUSPECT`, **not** `OFFLINE`.
+The BGW320-only `on` state is reported as `GATEWAY_REPORTED`. Devices
+without a confirmed reachability history never become suspect solely because
+they are old gateway records. Offline confirmation requires negative-probe
+history not yet stored by schema v2. No notifications or schedules are created.
