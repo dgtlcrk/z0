@@ -21,7 +21,7 @@ jobs:
         with:
           terraform_version: "1.14.0"
       - name: Check formatting
-        run: terraform fmt -check -recursive infrastructure/terraform
+        run: terraform fmt -diff -check -recursive infrastructure/terraform
       - name: Initialize without remote backend
         working-directory: infrastructure/terraform/environments/dev
         run: terraform init -backend=false -input=false
