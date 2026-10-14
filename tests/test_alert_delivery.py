@@ -1,8 +1,6 @@
 """Alert durability, independence, default safety, and IRC acknowledgement."""
 
 import json
-import sqlite3
-
 from z0.network.alert_delivery import (
     connect,
     deliver_pending,
