@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
+import hmac
 import inspect
 import json
 import logging
+import os
 from http import HTTPStatus
 from http.server import (
     BaseHTTPRequestHandler,
@@ -256,6 +260,45 @@ class Z0RequestHandler(
         except BrokenPipeError:
             return
 
+    def _require_auth(self) -> bool:
+        """Optionally require credentials on all routes; reject partial setup."""
+        username = os.environ.get("Z0_API_AUTH_USERNAME", "")
+        password = os.environ.get("Z0_API_AUTH_PASSWORD", "")
+        if not username and not password:
+            return True
+        if not username or not password:
+            self._send_error_payload(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "API authentication configuration is incomplete",
+            )
+            return False
+        supplied = self.headers.get("Authorization", "")
+        authorized = False
+        if supplied.startswith("Basic "):
+            try:
+                raw = base64.b64decode(
+                    supplied[6:].strip(), validate=True
+                ).decode("utf-8")
+                user, secret = raw.split(":", 1)
+                authorized = (
+                    hmac.compare_digest(user, username)
+                    & hmac.compare_digest(secret, password)
+                )
+            except (ValueError, UnicodeDecodeError, binascii.Error):
+                pass
+        if not authorized:
+            body = b'{"error":"Unauthorized"}'
+            self.send_response(HTTPStatus.UNAUTHORIZED.value)
+            self.send_header("WWW-Authenticate", 'Basic realm="z0_n3t"')
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(body)
+            return False
+        return True
+
     def _send_error_payload(
         self,
         status: HTTPStatus,
@@ -443,6 +486,8 @@ class Z0RequestHandler(
             )
 
     def do_GET(self) -> None:
+        if not self._require_auth():
+            return
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(
@@ -561,6 +606,8 @@ class Z0RequestHandler(
         )
 
     def do_POST(self) -> None:
+        if not self._require_auth():
+            return
         self._send_error_payload(
             HTTPStatus.METHOD_NOT_ALLOWED,
             (
