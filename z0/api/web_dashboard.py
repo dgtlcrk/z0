@@ -18,6 +18,17 @@ small,.muted{color:#94a3b8}
 button{background:#2563eb;border:0;border-radius:8px;color:white;
 padding:10px 18px;cursor:pointer;font-weight:600}
 button:disabled{opacity:.5;cursor:wait}
+.controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+input,select{background:#0b1220;border:1px solid #475569;color:#edf3ff;
+border-radius:8px;padding:10px;min-width:150px}
+input{flex:1}
+.pill{display:inline-block;border-radius:16px;padding:3px 9px;
+background:#334155;font-size:.8rem}
+.pill.online,.pill.available{color:#86efac;background:#14532d}
+.pill.gateway_on,.pill.gateway_reported{color:#93c5fd;background:#1e3a8a}
+.pill.stale,.pill.not_observed{color:#fcd34d;background:#78350f}
+.pill.unavailable{color:#fca5a5;background:#7f1d1d}
+.controls label{display:flex;align-items:center;gap:7px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
 gap:14px;margin:22px 0}
 .card,section{background:#172235;border:1px solid #304057;
@@ -45,7 +56,20 @@ th{color:#94a3b8}
 <div class="card">Real transitions<strong id="events">—</strong></div>
 </div>
 <section><h2>Inventory states</h2><div id="states"></div></section>
-<section><h2>Saved device inventory</h2><table><thead><tr>
+<section><h2>Saved device inventory</h2>
+<div class="controls">
+<input id="search" type="search" aria-label="Search devices"
+placeholder="Search IP, name or MAC">
+<label>State <select id="stateFilter">
+<option value="">All states</option>
+</select></label>
+<label>Sort <select id="sort">
+<option value="ip">IP address</option>
+<option value="name">Device name</option>
+<option value="state">State</option>
+<option value="mac">MAC address</option>
+</select></label></div>
+<p id="shown" class="muted" aria-live="polite"></p><table><thead><tr>
 <th>IP</th><th>Name</th><th>MAC</th><th>State</th>
 </tr></thead><tbody id="devicerows"></tbody></table></section>
 <section><h2>Monitored hosts</h2><table><thead><tr>
@@ -56,8 +80,43 @@ th{color:#94a3b8}
 </tr></thead><tbody id="eventrows"></tbody></table></section>
 <script>
 const byId=id=>document.getElementById(id);
+let savedDevices=[];
 function cell(row,value){let td=document.createElement('td');
 td.textContent=String(value??'');row.append(td)}
+function stateBadge(state){
+  const span=document.createElement('span');
+  span.className='pill '+String(state||'').toLowerCase();
+  span.textContent=state||'UNKNOWN';
+  return span;
+}
+function renderDevices(){
+  const query=byId('search').value.trim().toLowerCase();
+  const state=byId('stateFilter').value;
+  const sort=byId('sort').value;
+  const key={ip:'ip_address',name:'display_name',state:'state',mac:'mac_address'}[sort];
+  const matches=savedDevices.filter(d=>
+    (!state||d.state===state)&&
+    [d.ip_address,d.display_name,d.hostname,d.mac_address,d.state]
+      .some(v=>String(v||'').toLowerCase().includes(query)));
+  matches.sort((a,b)=>String(a[key]||'').localeCompare(
+    String(b[key]||''),undefined,{numeric:true,sensitivity:'base'}));
+  const tbody=byId('devicerows');
+  tbody.replaceChildren();
+  for(const device of matches){
+    const tr=document.createElement('tr');
+    cell(tr,device.ip_address||'—');
+    cell(tr,device.display_name||device.hostname||'—');
+    cell(tr,device.mac_address||'—');
+    const td=document.createElement('td');
+    td.append(stateBadge(device.state));tr.append(td);
+    tbody.append(tr);
+  }
+  if(!matches.length){const tr=document.createElement('tr');
+    const td=document.createElement('td');td.colSpan=4;
+    td.textContent='No matching devices';tr.append(td);tbody.append(tr)}
+  byId('shown').textContent='Showing '+matches.length+' of '+
+    savedDevices.length+' devices';
+}
 function showRows(target,items,columns){
   const parent=byId(target);parent.replaceChildren();
   if(!items.length){let tr=document.createElement('tr');
@@ -83,8 +142,15 @@ async function refresh(){
     const stateText=Object.entries(data.inventory.states)
       .map(([key,count])=>key+': '+count).join('  ·  ');
     byId('states').textContent=stateText||'No saved devices';
-    showRows('devicerows',devices,[
-      d=>d.ip_address,d=>d.hostname,d=>d.mac_address,d=>d.state]);
+    savedDevices=devices;
+    const filter=byId('stateFilter');
+    const selected=filter.value;
+    filter.replaceChildren(new Option('All states',''));
+    for(const state of [...new Set(devices.map(d=>d.state))].sort()){
+      filter.add(new Option(state,state));
+    }
+    filter.value=selected;
+    renderDevices();
     showRows('hostrows',data.monitoring.hosts,[
       h=>h.address,h=>h.state,h=>h.last_checked||'—']);
     showRows('eventrows',data.events.recent,[
@@ -95,6 +161,9 @@ async function refresh(){
   finally{byId('refresh').disabled=false}
 }
 byId('refresh').addEventListener('click',refresh);
+for(const name of ['search','stateFilter','sort']){
+  byId(name).addEventListener(name==='search'?'input':'change',renderDevices);
+}
 refresh();
 </script>
 </body></html>
