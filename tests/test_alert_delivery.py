@@ -73,6 +73,7 @@ def test_irc_spool_waits_for_acknowledgement(tmp_path):
     assert not send_irc("z0_n3t DOWN: 192.168.1.254", key, tmp_path)
     files = list((tmp_path / "pending").glob("*.json"))
     assert len(files) == 1
+    assert files[0].stat().st_mode & 0o777 == 0o640
     assert json.loads(files[0].read_text())["message"].startswith("z0_n3t")
     assert not send_irc("z0_n3t DOWN: 192.168.1.254", key, tmp_path)
     (tmp_path / "acks" / (files[0].stem + ".ack")).touch()
