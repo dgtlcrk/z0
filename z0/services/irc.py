@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import ssl
+from functools import partial
 from collections.abc import Callable
 
 import irc.bot
@@ -21,7 +22,12 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
         secret = os.getenv("IRC_OP_SECRET", "")
         self.op_auth = OpAuthenticator(secret, config.channel) if secret else None
         connect_factory = (
-            irc.connection.Factory(wrapper=ssl.create_default_context().wrap_socket)
+            irc.connection.Factory(
+                wrapper=partial(
+                    ssl.create_default_context().wrap_socket,
+                    server_hostname=config.server,
+                )
+            )
             if config.use_tls
             else irc.connection.Factory()
         )
