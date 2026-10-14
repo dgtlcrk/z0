@@ -33,7 +33,8 @@ background:#334155;font-size:.8rem}
 #devicerows tr:hover,#devicerows tr:focus{background:#253651;outline:2px solid #60a5fa}
 #details[hidden]{display:none}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
-.detail-grid div{background:#0b1220;padding:12px;border-radius:8px;overflow-wrap:anywhere}
+.detail-grid div{background:#0b1220;padding:12px;border-radius:8px;
+overflow-wrap:anywhere}
 .detail-grid strong{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:4px}
 #detailclose{float:right;background:#334155}
 #details{border-color:#60a5fa}
