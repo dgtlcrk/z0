@@ -15,6 +15,7 @@ from z0.botops.render import render_banner
 from z0.config import config
 from z0.network import collect_network_status
 from z0.network.availability import check_targets, load_availability
+from z0.network.availability_simulation import load_simulation, simulate
 from z0.network.devices import collect_devices
 from z0.network.discovery import discover_hosts
 from z0.network.gateway import collect_gateway_status
@@ -423,6 +424,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     availability_list.add_argument("--json", action="store_true")
 
+    sim = network_sub.add_parser(
+        "availability-simulate", help="Replay S/F checks offline; no ping"
+    )
+    sim.add_argument("--ip", required=True)
+    sim.add_argument("--sequence", required=True)
+    sim.add_argument("--failures", type=int, default=3)
+    sim.add_argument("--recovery", type=int, default=2)
+    sim.add_argument("--json", action="store_true")
+
+    sim_history = network_sub.add_parser(
+        "availability-sim-history", help="Read offline transition history"
+    )
+    sim_history.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -520,6 +535,48 @@ def main() -> None:
         elif args.jobs_command == "daemon":
             scheduler.serve_forever(args.poll)
 
+        return
+
+    if args.command == "network" and args.network_command in {
+        "availability-simulate", "availability-sim-history"
+    }:
+        try:
+            if args.network_command == "availability-simulate":
+                record, new_events = simulate(
+                    args.ip, args.sequence,
+                    failure_threshold=args.failures,
+                    recovery_threshold=args.recovery,
+                )
+                payload = {
+                    "host": record.to_dict(),
+                    "transitions": [item.to_dict() for item in new_events],
+                }
+            else:
+                hosts, events = load_simulation()
+                payload = {
+                    "hosts": [item.to_dict() for item in hosts.values()],
+                    "transitions": [item.to_dict() for item in events],
+                }
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f"Simulation failed: {error}\n")
+        if args.json:
+            _print_json(payload)
+        else:
+            print("Offline availability simulation (NO NETWORK TRAFFIC)")
+            if args.network_command == "availability-simulate":
+                print(
+                    f"{record.address}: {record.state} "
+                    f"(successes={record.successes}, failures={record.failures})"
+                )
+                for event in new_events:
+                    print(f"  {event.old_state} -> {event.new_state}")
+            else:
+                print(f"Hosts: {len(hosts)} | Transitions: {len(events)}")
+                for event in events:
+                    print(
+                        f"{event.timestamp} {event.address}: "
+                        f"{event.old_state} -> {event.new_state}"
+                    )
         return
 
     if args.command == "network" and args.network_command in {
