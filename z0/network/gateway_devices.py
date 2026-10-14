@@ -136,6 +136,6 @@ def collect_gateway_devices(
     html = (
         html_file.read_text(encoding="utf-8")
         if html_file is not None
-        else _fetch(gateway, "/cgi-bin/devices.ha")
+        else _fetch(gateway, "/cgi-bin/devices.ha", timeout=30)
     )
     return parse_gateway_devices(html)
