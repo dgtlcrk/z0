@@ -595,3 +595,19 @@ Results are persisted in a separate versioned file,
 inventories are unaffected. No scheduler, alerts, or background jobs are
 installed. Only explicitly supplied private IPv4 addresses are probed;
 maximum 16 per call. Avoid monitoring sleeping mobile devices.
+
+### Offline availability simulation and transition history
+
+```bash
+z0 network availability-simulate --ip 192.168.1.254 --sequence FFFSS
+z0 network availability-sim-history
+z0 network availability-sim-history --json
+```
+
+`S` simulates a successful ICMP check and `F` a failed check. Each
+command replays the exact sequence **without sending packets**. Consecutive
+failures (default 3) transition to `UNAVAILABLE`, and consecutive successes
+(default 2) recover to `AVAILABLE`. State-change events are appended to a
+separate `~/.config/z0/availability_simulation_v1.json` file; repeated
+invocations resume the simulated state. The real availability history and
+unified inventory are not modified. No scheduler or alerts are added.
