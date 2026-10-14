@@ -14,7 +14,9 @@ from pathlib import Path
 
 from z0.network.availability import HostAvailability, normalize_targets, transition
 
-DEFAULT_SIMULATION_PATH = Path.home() / ".config" / "z0" / "availability_simulation_v1.json"
+DEFAULT_SIMULATION_PATH = (
+    Path.home() / ".config" / "z0" / "availability_simulation_v1.json"
+)
 SIMULATION_SCHEMA = 1
 
 
