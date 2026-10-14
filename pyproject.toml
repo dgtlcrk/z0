@@ -42,6 +42,7 @@ z0-botops = "z0.botops.cli:main"
 z0-banner = "z0.botops.banner:main"
 z0-platform = "z0.platform_cli:main"
 z0-api = "z0.api.server:serve"
+z0-monitor-once = "z0.network.monitoring_runner:main"
 
 z0 = "z0.unified_cli:main"
 z0-docker = "z0.docker_cli:main"
