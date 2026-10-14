@@ -20,6 +20,7 @@ from z0.network.gateway import collect_gateway_status
 from z0.network.gateway_devices import collect_gateway_devices
 from z0.network.inventory import inventory_devices, update_inventory
 from z0.network.neighbors import collect_neighbors
+from z0.network.state_intelligence import assess_states
 from z0.network.tracked_inventory import load_tracked, update_tracked
 from z0.network.unified import collect_unified_devices
 from z0.plugins.registry import build_plugin_registry
@@ -396,6 +397,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tracked_update.add_argument("--json", action="store_true")
 
+    assess = inventory_sub.add_parser(
+        "assess", help="Assess v2 device states without scanning or writing"
+    )
+    assess.add_argument("--json", action="store_true")
+    assess.add_argument(
+        "--stale-hours", type=float, default=24,
+        help=(
+            "Hours since last observation before a previously online "
+            "missing device becomes SUSPECT"
+        ),
+    )
+
     return parser
 
 
@@ -714,6 +727,33 @@ def main() -> None:
                 print()
                 print(f"Reachable hosts: {len(records)}")
 
+        return
+
+    if args.command == "inventory" and args.inventory_command == "assess":
+        try:
+            records = [
+                item.to_dict()
+                for item in assess_states(
+                    load_tracked(), stale_hours=args.stale_hours
+                )
+            ]
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f"Inventory assessment failed: {error}\n")
+        if args.json:
+            _print_json(records)
+        else:
+            print(f"Read-only device state assessment: {len(records)} device(s)")
+            print(
+                f"{'IP ADDRESS':<16} {'ASSESSMENT':<20} "
+                f"{'OBSERVED':<15} {'DEVICE'}"
+            )
+            for record in records:
+                print(
+                    f"{record['ip_address']:<16} "
+                    f"{record['assessment']:<20} "
+                    f"{record['observed_state']:<15} "
+                    f"{record['hostname'] or record['identity']}"
+                )
         return
 
     if args.command == "inventory" and args.inventory_command in {
