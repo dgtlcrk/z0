@@ -21,6 +21,7 @@ from z0.network.gateway_devices import collect_gateway_devices
 from z0.network.inventory import inventory_devices, update_inventory
 from z0.network.neighbors import collect_neighbors
 from z0.network.unified import collect_unified_devices
+from z0.network.tracked_inventory import load_tracked, update_tracked
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
@@ -385,6 +386,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output structured JSON",
     )
 
+    tracked_list = inventory_sub.add_parser(
+        "unified-list", help="List version-2 unified inventory"
+    )
+    tracked_list.add_argument("--json", action="store_true")
+
+    tracked_update = inventory_sub.add_parser(
+        "unified-update", help="Persist version-2 unified observations"
+    )
+    tracked_update.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -703,6 +714,33 @@ def main() -> None:
                 print()
                 print(f"Reachable hosts: {len(records)}")
 
+        return
+
+    if args.command == "inventory" and args.inventory_command in {
+        "unified-list", "unified-update"
+    }:
+        try:
+            inventory = (
+                update_tracked()
+                if args.inventory_command == "unified-update"
+                else load_tracked()
+            )
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f"Unified inventory failed: {error}\\n")
+        records = [item.to_dict() for item in inventory.values()]
+        if args.json:
+            _print_json(records)
+        else:
+            action = (
+                "updated" if args.inventory_command == "unified-update"
+                else "loaded"
+            )
+            print(f"Unified inventory {action}: {len(records)} device(s)")
+            for item in inventory.values():
+                print(
+                    f"{item.ip_address:<16} {item.mac_address:<18} "
+                    f"{item.state:<14} {item.hostname}"
+                )
         return
 
     if args.command == "inventory":
