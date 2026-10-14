@@ -73,3 +73,13 @@ variable "irc_op_secret_arn" {
   default     = null
   nullable    = true
 }
+
+variable "irc_autoop_hostmask" {
+  description = "Exact nick!user@host allowed automatic channel OP on JOIN. Not strong identity authentication."
+  type        = string
+  default     = ""
+  validation {
+    condition     = var.irc_autoop_hostmask == "" || can(regex("^[^! ]+![^@ ]+@[^ ]+$", var.irc_autoop_hostmask))
+    error_message = "Provide a full nick!user@host identity, or leave empty to disable auto-OP."
+  }
+}
