@@ -9,7 +9,11 @@ def test_challenge_and_one_time_response():
     ok, message = auth.challenge("nas-!user@host", "#skipland")
     assert ok
     nonce = message.split(": ", 1)[1].split()[0]
-    digest = hmac.new(b"s" * 32, f"z0-op-v1:#skipland:{nonce}".encode(), hashlib.sha256).hexdigest()
+    digest = hmac.new(
+        b"s" * 32,
+        f"z0-op-v1:#skipland:{nonce}".encode(),
+        hashlib.sha256,
+    ).hexdigest()
     assert not auth.verify("other!user@host", "#skipland", digest)
     assert auth.verify("nas-!user@host", "#skipland", digest)
     assert not auth.verify("nas-!user@host", "#skipland", digest)
