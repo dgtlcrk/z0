@@ -38,3 +38,12 @@ def test_tls_factory_validates_host(monkeypatch):
         create_context.return_value.wrap_socket.assert_called_once_with(
             sock, server_hostname="irc.example.org"
         )
+
+
+def test_custom_ca_is_loaded(monkeypatch):
+    monkeypatch.setenv("IRC_TLS_CA_PEM", "test PEM")
+    with patch.object(service.ssl, "create_default_context") as factory:
+        service.create_irc_ssl_context()
+    factory.return_value.load_verify_locations.assert_called_once_with(
+        cadata="test PEM"
+    )
