@@ -7,7 +7,6 @@ import pytest
 from z0.network.state_intelligence import assess_states
 from z0.network.tracked_inventory import TrackedDevice
 
-
 NOW = datetime(2026, 10, 14, 12, tzinfo=UTC)
 
 
