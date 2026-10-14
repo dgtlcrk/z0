@@ -69,7 +69,7 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
                 message = payload["message"]
                 if not isinstance(message, str) or not message.startswith("z0_n3t "):
                     raise ValueError("Invalid alert message")
-                if len(message) > 350 or any(c in message for c in "\\r\\n\\x00"):
+                if len(message) > 350 or any(c in message for c in "\r\n\x00"):
                     raise ValueError("Invalid IRC alert payload")
                 # Send only to the channel already configured for this bot.
                 self.send_response(connection, config.channel, message)
