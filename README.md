@@ -810,3 +810,55 @@ These messages are local journal notifications, **not outbound alerts**.
 If remote outage notifications are needed later, implement them as
 a separate deliberate design change. Do not expose monitoring configuration
 or z0's local API on a public port.
+
+### Optional multichannel outage and recovery alerts (PR #52)
+
+**Disabled by default.** Existing monitoring runs, history and systemd timer
+continue unchanged until `"alerts": true` is added to
+`~/.config/z0/monitoring.json`. Keep `"notify": true` for journal notices.
+
+When enabled, the monitoring runner maintains a private SQLite delivery
+outbox at `~/.config/z0/alert_delivery.sqlite3`. On the first enabled run,
+it records a baseline of existing availability events without sending
+historical notifications. Each later confirmed transition into `AVAILABLE`
+or `UNAVAILABLE` is independently queued for **Discord**, **Gmail** and
+**IRC**. A failure in one channel does not stop the others. Pending deliveries
+are retried on each five-minute monitoring run. Do **not** delete the database
+casually: it holds the no-repeat delivery state. Successful external submission
+is treated as delivery; outbound protocols cannot guarantee exactly-once
+recipient visibility in every crash/network failure scenario.
+
+Provide mode-0600 files, readable by the `zo` account (never commit secrets):
+
+- `~/.config/z0/discord.env`:
+  `Z0_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...`
+- `~/.config/z0/smtp.env`: `Z0_SMTP_HOST=smtp.gmail.com`,
+  `Z0_SMTP_PORT=587`, `Z0_SMTP_USERNAME`, `Z0_SMTP_PASSWORD`,
+  `Z0_SMTP_FROM`, and `Z0_SMTP_TO`. Gmail STARTTLS verifies TLS
+  certificates; use a Google App Password, never a primary account password.
+
+IRC delivery uses the **existing** z0 IRC connection, never a second client.
+It requires a dedicated shared bind mount. On the host, create
+`/home/zo/.config/z0/irc_alerts/pending` and
+`/home/zo/.config/z0/irc_alerts/acks`, writable by the bot process and
+`zo`; do not make this directory world-writable. On the **next controlled
+container replacement**, bind-mount that host folder at `/run/z0-alerts`
+and set `Z0_IRC_ALERT_SPOOL=/run/z0-alerts`. Preserve the existing IRC
+variables including TLS CA PEM, image entrypoint/command, network, restart
+policy and all other existing Docker run settings. Inspect configuration
+without printing secrets; do not replace a live bot until configuration,
+backup and rollback are reviewed. Bot uses its already configured IRC
+channel (currently EFnet `#skipland`) and polls pending alerts every five
+seconds. Acknowledgement files mark handoff to the IRC client, not guaranteed
+delivery to every human on IRC.
+
+**Activation order:** merge/validate tests, deploy Python package on Pi,
+create the protected shared spool, stage the IRC container update separately,
+verify Discord and Gmail files, verify SMTP/webhook test messages, and only
+then set `"alerts": true` in monitoring.json. Existing monitoring continues
+safely if IRC has not yet been mounted: that channel remains pending. Local
+failure details are intentionally redacted because network exception strings
+can include credential-bearing webhook URLs.
+
+Disable outbound alerting quickly by setting `"alerts": false` again; the
+existing five-minute availability monitoring may continue uninterrupted.
