@@ -707,3 +707,43 @@ Missing values read *Not reported* (or *Not recorded* for absent timestamps).
 Discovery and verified manual availability have separate headings so a gateway
 report is not mistaken for an ICMP reachability check. These are presentation
 changes only: JSON data, stored snapshots and network operations are unchanged.
+
+### Optional API password protection (PR #49)
+
+The z0 API supports opt-in HTTP Basic authentication across **all routes**,
+including `/monitor`, `/api/network/*`, `/api/docker/*`, and `/`.
+This is for a single trusted operator, **not** a multiuser login system.
+
+Set both `Z0_API_AUTH_USERNAME` and `Z0_API_AUTH_PASSWORD` in the API
+service's environment. When both are absent, compatibility mode remains
+unauthenticated; if only one is set, requests fail closed with HTTP 503.
+Unrecognized credentials receive HTTP 401 with a browser login prompt.
+Passwords must never be committed to Git or placed in the Caddyfile.
+
+On a Pi with the z0 API behind Caddy, keep the application bound to
+`127.0.0.1:8081`, and continue to use your trusted
+`https://192.168.1.229/monitor` HTTPS address. HTTP Basic credentials are
+transmitted as an encoded (not encrypted) header, so **never expose this
+mechanism over plain HTTP on the LAN**.
+
+For a systemd deployment, use a root-owned 0600 environment file such as
+`/etc/z0-api-auth.env` containing:
+
+```ini
+Z0_API_AUTH_USERNAME=admin
+Z0_API_AUTH_PASSWORD=REPLACE_WITH_UNIQUE_LONG_SECRET
+```
+
+Add `EnvironmentFile=/etc/z0-api-auth.env` in a dedicated
+`systemctl edit z0-api.service` override under `[Service]`, then reload
+systemd and restart **only** `z0-api.service`. Use a local terminal editor
+rather than entering a password into shell history. The systemd manager
+reads the protected environment file; anyone who can read the process
+environment or has administrative access to the Pi should be trusted.
+Browser Basic authentication remembers credentials until the browser
+session expires; it is not a logout-oriented session system.
+
+Before enabling on the live Pi, test the PR against its isolated HTTP
+server tests; verify Caddy proxying and that the new browser login
+challenge works after deployment. No changes to the Caddyfile, Docker
+containers, IRC bot, or inventory files are required.
