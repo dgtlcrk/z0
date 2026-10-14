@@ -747,3 +747,21 @@ Before enabling on the live Pi, test the PR against its isolated HTTP
 server tests; verify Caddy proxying and that the new browser login
 challenge works after deployment. No changes to the Caddyfile, Docker
 containers, IRC bot, or inventory files are required.
+
+### Inventory identification quality (PR #50)
+
+Saved devices now include read-only API presentation fields:
+
+- `display_name` — operator label, known observed hostname, or an explicit
+  `Unidentified (MAC/IP)` placeholder.
+- `identification_source` — `operator_label`, `observed_hostname`, or
+  `unidentified`, making it clear whether a name is operator-supplied or
+  discovered.
+- `locally_administered_mac` — indicates the locally administered MAC bit.
+  This is **not** proof of randomization, a device manufacturer, or ownership.
+
+The `/monitor` inventory has an **Unidentified only** checkbox and an
+**Identity** column. Click a row for provenance and any saved observations.
+The existing optional `~/.config/z0/device_labels.json` mapping remains the
+only operator naming mechanism. No guessed manufacturers, new probes, asset
+merges, persistent inventory changes, or background jobs are involved.
