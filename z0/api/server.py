@@ -28,6 +28,7 @@ from z0.dockerops import (
     docker_error_payload,
 )
 from z0.network.dashboard import build_monitoring_dashboard
+from z0.network.device_labels import label_devices, load_device_labels
 from z0.network.tracked_inventory import load_tracked
 
 LOGGER = logging.getLogger("z0.api")
@@ -467,10 +468,13 @@ class Z0RequestHandler(
                 if path == "/api/network/dashboard":
                     payload = build_monitoring_dashboard()
                 else:
-                    payload = [
-                        record.to_dict()
-                        for _, record in sorted(load_tracked().items())
-                    ]
+                    payload = label_devices(
+                        [
+                            record.to_dict()
+                            for _, record in sorted(load_tracked().items())
+                        ],
+                        load_device_labels(),
+                    )
             except (OSError, ValueError, TypeError, KeyError) as exc:
                 self._send_error_payload(
                     HTTPStatus.SERVICE_UNAVAILABLE,
