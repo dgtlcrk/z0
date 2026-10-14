@@ -161,6 +161,7 @@ resource "aws_ecs_task_definition" "bot" {
       { name = "BOT_NAME", value = "z0-cloud-01" },
       { name = "IRC_SERVER", value = var.irc_server },
       { name = "IRC_PORT", value = tostring(var.irc_port) },
+      { name = "IRC_TLS", value = "true" },
       { name = "IRC_CHANNEL", value = var.irc_channel },
       { name = "IRC_NICK", value = var.irc_nick }
     ]
