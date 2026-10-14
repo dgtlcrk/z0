@@ -11,7 +11,7 @@ from pathlib import Path
 from z0.network.gateway import DEFAULT_GATEWAY, _fetch
 
 MAC_PATTERN = re.compile(r"^(?:[0-9a-f]{2}:){5}[0-9a-f]{2}$", re.I)
-IP_PATTERN = re.compile(r"\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b")
+IP_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 
 
 @dataclass(frozen=True)
