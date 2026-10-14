@@ -1,6 +1,6 @@
 # Copy to backend.hcl (do not commit real configuration).
 # Create the S3 bucket separately with versioning, encryption, and public access blocked.
-bucket       = "REPLACE-WITH-GLOBALLY-UNIQUE-STATE-BUCKET"
+bucket       = "z0-tfstate-123456789012-us-east-1"
 key          = "z0/dev/terraform.tfstate"
 region       = "us-east-1"
 encrypt      = true
