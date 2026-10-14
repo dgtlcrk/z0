@@ -726,7 +726,7 @@ def main() -> None:
                 else load_tracked()
             )
         except (OSError, ValueError, TypeError, KeyError) as error:
-            parser.exit(1, f"Unified inventory failed: {error}\\n")
+            parser.exit(1, f"Unified inventory failed: {error}\n")
         records = [item.to_dict() for item in inventory.values()]
         if args.json:
             _print_json(records)
