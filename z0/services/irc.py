@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
 import ssl
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path
 
 import irc.bot
 import irc.connection
@@ -31,6 +33,7 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
     def __init__(self) -> None:
         secret = os.getenv("IRC_OP_SECRET", "")
         self.op_auth = OpAuthenticator(secret, config.channel) if secret else None
+        self._alert_poll_scheduled = False
         self.autoop_hostmask = os.getenv("IRC_AUTOOP_HOSTMASK", "").strip().lower()
         connect_factory = (
             irc.connection.Factory(
@@ -49,9 +52,41 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
             connect_factory=connect_factory,
         )
 
+    def _drain_alert_spool(self) -> None:
+        """Drain host-queued alerts over this bot's existing IRC connection."""
+        directory = os.environ.get("Z0_IRC_ALERT_SPOOL", "")
+        if not directory:
+            return
+        spool = Path(directory)
+        if not (spool / "acks").is_dir():
+            return
+        connection = self.connection
+        if not connection.is_connected():
+            return
+        for path in sorted((spool / "pending").glob("*.json"))[:16]:
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                message = payload["message"]
+                if not isinstance(message, str) or not message.startswith("z0_n3t "):
+                    raise ValueError("Invalid alert message")
+                if len(message) > 350 or any(c in message for c in "\\r\\n\\x00"):
+                    raise ValueError("Invalid IRC alert payload")
+                # Send only to the channel already configured for this bot.
+                self.send_response(connection, config.channel, message)
+                receipt = spool / "acks" / (path.stem + ".ack")
+                receipt.touch(exist_ok=True)
+                path.unlink()
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                print(f"IRC alert queue item skipped: {type(exc).__name__}",
+                      flush=True)
+
     def on_welcome(self, connection, event) -> None:
         print(f"Connected to {config.server}", flush=True)
         connection.join(config.channel)
+        if (os.environ.get('Z0_IRC_ALERT_SPOOL')
+                and not self._alert_poll_scheduled):
+            self.reactor.scheduler.execute_every(5, self._drain_alert_spool)
+            self._alert_poll_scheduled = True
 
     def on_join(self, connection, event) -> None:
         if event.source.nick == connection.get_nickname():
