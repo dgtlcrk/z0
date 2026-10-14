@@ -17,6 +17,7 @@ from urllib.parse import (
 )
 
 from z0 import __version__
+from z0.api.web_dashboard import PAGE
 from z0.config import config
 from z0.core import (
     PlatformSettings,
@@ -26,10 +27,15 @@ from z0.dockerops import (
     DockerClient,
     docker_error_payload,
 )
+from z0.network.dashboard import build_monitoring_dashboard
+from z0.network.tracked_inventory import load_tracked
 
 LOGGER = logging.getLogger("z0.api")
 
 API_ENDPOINTS = [
+    "/monitor",
+    "/api/network/dashboard",
+    "/api/network/devices",
     "/api/status",
     "/api/system",
     "/api/inventory",
@@ -225,6 +231,23 @@ class Z0RequestHandler(
         )
         self.end_headers()
 
+        try:
+            self.wfile.write(encoded)
+        except BrokenPipeError:
+            return
+
+    def _send_html(self, page: str) -> None:
+        encoded = page.encode("utf-8")
+        self.send_response(HTTPStatus.OK.value)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", (
+            "default-src 'none'; style-src 'unsafe-inline'; "
+            "script-src 'unsafe-inline'; connect-src 'self'"
+        ))
+        self.end_headers()
         try:
             self.wfile.write(encoded)
         except BrokenPipeError:
@@ -433,6 +456,28 @@ class Z0RequestHandler(
                     "endpoints": API_ENDPOINTS,
                 }
             )
+            return
+
+        if path == "/monitor":
+            self._send_html(PAGE)
+            return
+
+        if path in {"/api/network/dashboard", "/api/network/devices"}:
+            try:
+                if path == "/api/network/dashboard":
+                    payload = build_monitoring_dashboard()
+                else:
+                    payload = [
+                        record.to_dict()
+                        for _, record in sorted(load_tracked().items())
+                    ]
+            except (OSError, ValueError, TypeError, KeyError) as exc:
+                self._send_error_payload(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    f"Saved monitoring data unavailable: {exc}",
+                )
+                return
+            self._send_json(payload)
             return
 
         if path.startswith("/api/docker"):

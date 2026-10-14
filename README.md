@@ -639,3 +639,27 @@ state, and real transition events. This command only reads existing JSON
 snapshots. It does not refresh the network, ping hosts, write inventory,
 start background monitoring, or send notifications. The displayed data may
 be stale until the corresponding manual collection commands are run.
+
+### Local web monitoring dashboard (read-only)
+
+The existing z0 API now serves a browser UI and saved-data endpoints:
+
+- `/monitor` — browser dashboard
+- `/api/network/dashboard` — saved inventory counts, availability and events
+- `/api/network/devices` — saved unified inventory records
+
+No extra process or frontend dependency is required. The dashboard refresh
+button **re-reads local snapshot files only**. It does not ping devices or
+modify monitoring or inventory records.
+
+For secure local access, run/bind the API to loopback and use an SSH tunnel:
+
+```bash
+ssh -L 8081:127.0.0.1:8081 zo@192.168.1.229
+```
+
+Then browse to `http://127.0.0.1:8081/monitor` on your own computer.
+If an API service already runs on port 8081, reuse that service after
+installing the new code; do not launch a second instance on the same port.
+Avoid exposing these local device details on an unauthenticated public
+interface. The existing API configuration determines its bind address.
