@@ -17,7 +17,8 @@ Thu Aug 27 14:28:29 2026
 <tr><th scope="row">Status</th><td class="col2">off</td></tr>
 <tr><th scope="row">Allocation</th><td class="col2">dhcp</td></tr>
 <tr><th scope="row">Connection Type</th>
-<td class="col2"><pre class="column">Wi-Fi<br />5 GHz Radio-1<br />Type: Home<br />Name: TS1992
+<td class="col2"><pre class="column">Wi-Fi<br />5 GHz Radio-1<br />
+Type: Home<br />Name: TS1992
 </pre></td></tr>
 <tr><th scope="row">Mesh Client</th><td class="col2">No</td></tr>
 <tr><td colspan="2"><hr /></td></tr>
