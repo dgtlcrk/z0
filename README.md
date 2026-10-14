@@ -625,3 +625,17 @@ availability state changes** (for example, UNCONFIRMED to UNAVAILABLE or
 UNAVAILABLE to AVAILABLE). Events are saved atomically with the host states
 in the same `availability_v1.json` file. Older v1 files without events
 remain readable. No scheduler, alerts, or automatic probing are introduced.
+
+### Read-only CLI monitoring dashboard
+
+```bash
+z0 network dashboard
+z0 network dashboard --events 5
+z0 network dashboard --json
+```
+
+Summarizes the latest **saved** unified inventory v2, manual availability
+state, and real transition events. This command only reads existing JSON
+snapshots. It does not refresh the network, ping hosts, write inventory,
+start background monitoring, or send notifications. The displayed data may
+be stale until the corresponding manual collection commands are run.
