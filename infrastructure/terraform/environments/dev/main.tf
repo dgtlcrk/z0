@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -178,7 +180,8 @@ resource "aws_ecs_service" "bot" {
   name            = local.name
   cluster         = aws_ecs_cluster.cloud.id
   task_definition = aws_ecs_task_definition.bot.arn
-  desired_count   = 1
+  # Intentionally off until IRC TLS and deployment prerequisites are verified.
+  desired_count   = var.enable_bot ? 1 : 0
   launch_type     = "FARGATE"
   platform_version = "LATEST"
 
@@ -189,6 +192,13 @@ resource "aws_ecs_service" "bot" {
     subnets          = [aws_subnet.public.id]
     security_groups  = [aws_security_group.task.id]
     assign_public_ip = true
+  }
+
+  lifecycle {
+    precondition {
+      condition     = data.aws_caller_identity.current.account_id == var.aws_account_id
+      error_message = "AWS account mismatch: refusing to deploy into an unexpected account."
+    }
   }
 
   depends_on = [aws_route_table_association.public]
