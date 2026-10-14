@@ -18,8 +18,6 @@ from urllib.parse import (
 
 from z0 import __version__
 from z0.api.web_dashboard import PAGE
-from z0.network.dashboard import build_monitoring_dashboard
-from z0.network.tracked_inventory import load_tracked
 from z0.config import config
 from z0.core import (
     PlatformSettings,
@@ -29,6 +27,8 @@ from z0.dockerops import (
     DockerClient,
     docker_error_payload,
 )
+from z0.network.dashboard import build_monitoring_dashboard
+from z0.network.tracked_inventory import load_tracked
 
 LOGGER = logging.getLogger("z0.api")
 
