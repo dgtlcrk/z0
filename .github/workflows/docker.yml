@@ -42,7 +42,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push image
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ARM64 image
         shell: bash
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -50,10 +56,10 @@ jobs:
         run: |
           IMAGE_TAG="${GITHUB_SHA:0:12}"
 
-          docker build \
+          docker buildx build \
+            --platform linux/arm64 \
+            --provenance=false \
             --tag "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}" \
             --tag "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest" \
+            --push \
             .
-
-          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
