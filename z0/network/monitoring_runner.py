@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Iterator
 
 from z0.network.alert_delivery import (
-    connect, deliver_pending, enqueue_new_events,
+    connect,
+    deliver_pending,
+    enqueue_new_events,
 )
 from z0.network.availability import (
     DEFAULT_PATH as AVAILABILITY_PATH,
