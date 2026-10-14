@@ -29,6 +29,16 @@ def create_irc_ssl_context() -> ssl.SSLContext:
 
 
 
+def valid_irc_alert_message(message: object) -> bool:
+    """Permit one safe IRC line from the local spool."""
+    return (
+        isinstance(message, str)
+        and message.startswith("z0_n3t ")
+        and len(message) <= MAX_IRC_MESSAGE_LENGTH
+        and not any(char in message for char in "\r\n\x00")
+    )
+
+
 class Z0Bot(irc.bot.SingleServerIRCBot):
     def __init__(self) -> None:
         secret = os.getenv("IRC_OP_SECRET", "")
@@ -67,9 +77,7 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
             try:
                 payload = json.loads(path.read_text(encoding="utf-8"))
                 message = payload["message"]
-                if not isinstance(message, str) or not message.startswith("z0_n3t "):
-                    raise ValueError("Invalid alert message")
-                if len(message) > 350 or any(c in message for c in "\\r\\n\\x00"):
+                if not valid_irc_alert_message(message):
                     raise ValueError("Invalid IRC alert payload")
                 # Send only to the channel already configured for this bot.
                 self.send_response(connection, config.channel, message)
