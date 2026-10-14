@@ -40,9 +40,9 @@ variable "irc_channel" {
 }
 
 variable "irc_port" {
-  description = "IRC port. Current application does not establish TLS automatically."
+  description = "IRC TLS port for the cloud node."
   type        = number
-  default     = 6667
+  default     = 6697
   validation {
     condition     = var.irc_port > 0 && var.irc_port <= 65535
     error_message = "Port must be between 1 and 65535."
