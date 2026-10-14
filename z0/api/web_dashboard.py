@@ -38,6 +38,10 @@ overflow-wrap:anywhere}
 .detail-grid strong{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:4px}
 #detailclose{float:right;background:#334155}
 #details{border-color:#60a5fa}
+.detail-grid .time-value{overflow-wrap:normal;word-break:normal}
+.detail-grid .time-value time{white-space:normal}
+.detail-note{color:#94a3b8;font-size:.85rem;margin:8px 0 14px}
+.detail-heading{margin:24px 0 12px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
 gap:14px;margin:22px 0}
 .card,section{background:#172235;border:1px solid #304057;
@@ -86,15 +90,18 @@ placeholder="Search IP, name or MAC">
 <h2 id="detailtitle">Device details</h2>
 <p class="muted">Saved data only · no active scans</p>
 <p id="detailerror" class="error" role="alert"></p>
+<h2 class="detail-heading">Device identity &amp; discovery</h2>
+<p class="detail-note">Inventory observations are not live availability tests.</p>
 <div class="detail-grid" id="detailfields"></div>
-<h2 style="margin-top:20px">Availability monitoring</h2>
+<h2 class="detail-heading">Verified availability checks</h2>
+<p class="detail-note">Saved results from manually initiated ICMP probes.</p>
 <div id="detailavailability" class="muted"></div>
-<h2 style="margin-top:20px">Recorded transitions</h2>
-<table><thead><tr><th>Time (UTC)</th><th>From</th><th>To</th>
+<h2 class="detail-heading">Recorded real transitions</h2>
+<table><thead><tr><th>Time (local)</th><th>From</th><th>To</th>
 </tr></thead><tbody id="detailevents"></tbody></table>
 </section>
 <section><h2>Monitored hosts</h2><table><thead><tr>
-<th>Address</th><th>Status</th><th>Last check (UTC)</th>
+<th>Address</th><th>Status</th><th>Last check (local)</th>
 </tr></thead><tbody id="hostrows"></tbody></table></section>
 <section><h2>Recent real events</h2><table><thead><tr>
 <th>Time (UTC)</th><th>Address</th><th>Transition</th>
@@ -156,12 +163,26 @@ function showRows(target,items,columns){
   for(const item of items){let tr=document.createElement('tr');
     for(const fn of columns)cell(tr,fn(item));parent.append(tr)}
 }
+function formattedTime(value){
+  if(!value)return 'Not recorded';
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return String(value);
+  const local=new Intl.DateTimeFormat(undefined,{
+    year:'numeric',month:'short',day:'numeric',
+    hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'
+  }).format(date);
+  return local+' (local)';
+}
+function fieldValue(value){
+  return value===null||value===undefined||value===''?
+    'Not reported':String(value);
+}
 function detailField(name,value){
   const item=document.createElement('div');
   const label=document.createElement('strong');
   label.textContent=name;item.append(label);
   const content=document.createElement('span');
-  content.textContent=String(value??'—')||'—';
+  content.textContent=fieldValue(value);
   item.append(content);byId('detailfields').append(item);
 }
 async function openDetails(device){
@@ -189,19 +210,20 @@ async function openDetails(device){
       'Inventory state':d.state,'Gateway status':d.gateway_status,
       'Connection type':d.connection_type,
       'Sources':(d.sources||[]).join(', '),
-      'First seen (UTC)':d.first_seen,'Last observed (UTC)':d.last_observed,
-      'Last confirmed online (UTC)':d.last_confirmed_online,
+      'First seen':formattedTime(d.first_seen),
+      'Last observed':formattedTime(d.last_observed),
+      'Last confirmed online':formattedTime(d.last_confirmed_online),
       'Observation count':d.observation_count,
       'Last gateway activity':d.last_activity,
     }))detailField(name,value);
     const a=data.availability;
     byId('detailavailability').textContent=a?
-      a.state+' · Last checked: '+(a.last_checked||'—')+
+      a.state+' · Last checked: '+formattedTime(a.last_checked)+
       ' · Successful probes: '+a.successes+
       ' · Consecutive failures: '+a.failures:
       'No saved availability monitoring for this device';
     showRows('detailevents',data.events,[
-      e=>e.timestamp,e=>e.old_state,e=>e.new_state]);
+      e=>formattedTime(e.timestamp),e=>e.old_state,e=>e.new_state]);
   }catch(err){
     if(selectedIdentifier===identifier){
       byId('detailerror').textContent=err.message;
@@ -241,9 +263,10 @@ async function refresh(){
     filter.value=selected;
     renderDevices();
     showRows('hostrows',data.monitoring.hosts,[
-      h=>h.address,h=>h.state,h=>h.last_checked||'—']);
+      h=>h.address,h=>h.state,h=>formattedTime(h.last_checked)]);
     showRows('eventrows',data.events.recent,[
-      e=>e.timestamp,e=>e.address,e=>e.old_state+' → '+e.new_state]);
+      e=>formattedTime(e.timestamp),e=>e.address,
+      e=>e.old_state+' → '+e.new_state]);
     byId('status').textContent='Snapshot read at '+data.generated_at+
       ' · Refresh only reads saved files';
   }catch(err){byId('error').textContent='Dashboard unavailable: '+err.message}
