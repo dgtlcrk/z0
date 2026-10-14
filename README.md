@@ -698,3 +698,12 @@ The `GET /api/network/device?mac=48:e2:ad:86:ff:61` endpoint returns
 the same detail data as JSON. It accepts an exact MAC or saved IP address
 under the `mac` parameter. Missing devices return 404. No scanning, probing,
 inventory edits, or activity scheduling occurs.
+
+### Browser device presentation
+
+The device detail panel displays saved first/last observation and monitoring
+timestamps in the **browser's local time zone** with its time-zone abbreviation.
+Missing values read *Not reported* (or *Not recorded* for absent timestamps).
+Discovery and verified manual availability have separate headings so a gateway
+report is not mistaken for an ICMP reachability check. These are presentation
+changes only: JSON data, stored snapshots and network operations are unchanged.
