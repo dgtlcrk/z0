@@ -1,0 +1,53 @@
+# z0-cloud-01 / Phase 2 (draft)
+
+A **standalone 24/7 ARM64 IRC/BotOps task** on Amazon ECS Fargate in us-east-1. No access to the home Raspberry Pi or home LAN. Nothing is provisioned by adding these files.
+
+## Scope
+
+- Dedicated VPC, single public subnet, internet gateway, route table, and outbound-only security group (no inbound rules).
+- ECS Fargate service configured for one ARM64 task (0.25 vCPU / 512 MiB), **desired count zero by default** until launch approved, image pinned to an ECR commit tag.
+- CloudWatch log group (14-day retention).
+- Separate ECS execution and task IAM roles, no application AWS API permissions.
+- Optional existing Secrets Manager secret for IRC_OP_SECRET and separately required (on launch) verified PEM trust certificate for IRC_TLS_CA_PEM. Neither secret value is stored in Terraform.
+- No ALB, NAT gateway, RDS, home tunnel, or public listener.
+
+## Safety gate
+
+The ECS service uses `enable_bot = false` by default, so a first Terraform apply provisions the service at desired count 0, **not** a running 24/7 bot. Do not turn it on until the self-signed server certificate is explicitly accepted under the TOFU policy and loaded through Secrets Manager, TLS code is merged and tested, and its updated image is published to ECR, the destination approves bot connections, and deployment checks are complete. `enable_bot = true` is the explicitly reviewed production target.
+
+## Prerequisites before applying
+
+1. Review IRC server policy and approve server/channel. The cloud branch supports certificate/hostname-verified TLS via `IRC_TLS=true`, and ECS sets port 6697 by default. **irc.prison.net currently presents a self-signed certificate.** The user explicitly accepted Trust on First Use (TOFU) for SHA-256 fingerprint `43:62:53:B9:F8:38:03:FE:D9:6B:83:4F:79:E2:C5:B0:BC:48:62:E5:55:62:54:9E:7D:7C:87:32:28:78:DF:FF`. The matching PEM was tested against `irc.prison.net` with `Verification: OK` and stored in Secrets Manager as `z0/irc/tls-ca` (ARN in `terraform.tfvars.example`). TOFU does not establish first-contact authenticity; unexpected certificate rotation must be reviewed rather than blindly accepted. Never turn off certificate verification, and do not assume a certificate observed in an unverified TLS handshake is authenticated. Existing home configuration remains unchanged.
+2. Ensure the ECR SHA tag exists. This configuration initially pins `f595462a6e7a`.
+3. Bootstrap a dedicated S3 Terraform-state bucket following `../../bootstrap-state/README.md` with versioning, encryption, public-access block, and restricted IAM access. Fill backend.hcl from backend.hcl.example. Backend initialization is deliberately blocked until this is done.
+4. Prepare a separate least-privilege Terraform provisioner role; the ECR push role cannot create ECS/networking.
+5. Use the existing TLS certificate Secrets Manager ARN; optionally configure a separate OP authentication secret. Consider KMS permissions if changing to a customer-managed key.
+6. Review costs including Fargate 24/7, public IPv4, CloudWatch, and any Secrets Manager use. No automatic billing guardrail is included yet.
+7. Confirm the public subnet's internet access and security egress meet your security requirements; destination IPs are not restricted and allow-listing should be considered.
+8. Validate task runtime behavior. IRC bot reconnect / application-level health reporting is not an ECS container health check. A running ECS task is not proof of a successful IRC connection.
+9. Confirm whether IRC nick and channel may conflict with the home instance (separate nickname is configured).
+
+## Validation (after prerequisite setup)
+
+```bash
+cd infrastructure/terraform/environments/dev
+cp backend.hcl.example backend.hcl
+cp terraform.tfvars.example terraform.tfvars
+# Fill both example files with actual values first.
+terraform init -backend-config=backend.hcl
+terraform fmt -check -recursive ../../
+terraform validate
+terraform plan -out=deploy.tfplan
+# Review plan, IAM, networking and costs before:
+# terraform apply deploy.tfplan
+```
+
+**Do not run apply until reviewed.** Terraform state configuration and permissions must be prepared separately. Nothing in this draft invokes terraform apply.
+
+## Important limitations and next work
+
+- ECS service is intended to run 24/7 after explicit enablement, but offers no availability SLA or application heartbeat yet.
+- Network diagnostic commands (ping/traceroute) may require further testing and permissions under Fargate; do not presume they work.
+- This container is the IRC BotOps workload, not the separate z0 API, scheduler, or home-network inventory.
+- TLS implementation is now in the branch, but end-to-end server verification and publishing the updated image remain required before production.
+- Add CloudWatch alarms, cost budgets, and a separately scoped GitHub deployment role before enabling automated deployments. A GitHub Actions static validation workflow now checks formatting and validation on PRs, but does not plan/apply infrastructure.

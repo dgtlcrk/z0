@@ -23,6 +23,7 @@ class Config:
     port: int
     nickname: str
     channel: str
+    use_tls: bool
     platform: Mapping[str, Any]
 
     @classmethod
@@ -52,6 +53,9 @@ class Config:
                 "IRC_CHANNEL",
                 "#skipland",
             ),
+            use_tls=os.getenv("IRC_TLS", "false").strip().lower() in {
+                "1", "true", "yes", "on"
+            },
             platform=(
                 platform
                 if platform is not None
