@@ -1,3 +1,9 @@
+variable "enable_bot" {
+  description = "Safety gate: start the 24/7 ECS service only after IRC TLS and readiness review."
+  type        = bool
+  default     = false
+}
+
 variable "aws_region" {
   type    = string
   default = "us-east-1"
