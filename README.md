@@ -152,6 +152,26 @@ hardware versions, WAN source and connection state, public IPv4 address,
 upstream gateway, DNS servers, MTU, packet drops and errors, PON status,
 and UNI status.
 
+### BGW320 LAN Device Records
+
+Read the BGW320 device page without changing persistent inventory:
+
+```bash
+z0 network gateway-devices
+z0 network gateway-devices --json
+```
+
+For repeatable offline testing against a saved page:
+
+```bash
+z0 network gateway-devices --html-file /tmp/z0-bgw-devices.html
+```
+
+This collector preserves the gateway's on/off state and last-activity value as
+reported. It does **not** modify inventory or equate gateway state with ping
+reachability. The existing gateway fetch disables TLS certificate validation
+for the local self-signed BGW320 and should be hardened before expansion.
+
 ### Network Neighbors
 
 Show the Linux kernel neighbor table:
