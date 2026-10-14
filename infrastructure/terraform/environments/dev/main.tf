@@ -170,7 +170,8 @@ resource "aws_ecs_task_definition" "bot" {
       { name = "IRC_PORT", value = tostring(var.irc_port) },
       { name = "IRC_TLS", value = "true" },
       { name = "IRC_CHANNEL", value = var.irc_channel },
-      { name = "IRC_NICK", value = var.irc_nick }
+      { name = "IRC_NICK", value = var.irc_nick },
+      { name = "IRC_AUTOOP_HOSTMASK", value = var.irc_autoop_hostmask }
     ]
     secrets = local.secret_env
     logConfiguration = {
