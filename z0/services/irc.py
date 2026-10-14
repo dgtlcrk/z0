@@ -33,6 +33,7 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
     def __init__(self) -> None:
         secret = os.getenv("IRC_OP_SECRET", "")
         self.op_auth = OpAuthenticator(secret, config.channel) if secret else None
+        self._alert_poll_scheduled = False
         self.autoop_hostmask = os.getenv("IRC_AUTOOP_HOSTMASK", "").strip().lower()
         connect_factory = (
             irc.connection.Factory(
@@ -82,8 +83,10 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
     def on_welcome(self, connection, event) -> None:
         print(f"Connected to {config.server}", flush=True)
         connection.join(config.channel)
-        if os.environ.get('Z0_IRC_ALERT_SPOOL'):
+        if (os.environ.get('Z0_IRC_ALERT_SPOOL')
+                and not self._alert_poll_scheduled):
             self.reactor.scheduler.execute_every(5, self._drain_alert_spool)
+            self._alert_poll_scheduled = True
 
     def on_join(self, connection, event) -> None:
         if event.source.nick == connection.get_nickname():
