@@ -31,6 +31,7 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
     def __init__(self) -> None:
         secret = os.getenv("IRC_OP_SECRET", "")
         self.op_auth = OpAuthenticator(secret, config.channel) if secret else None
+        self.autoop_hostmask = os.getenv("IRC_AUTOOP_HOSTMASK", "").strip().lower()
         connect_factory = (
             irc.connection.Factory(
                 wrapper=partial(
@@ -55,6 +56,17 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
     def on_join(self, connection, event) -> None:
         if event.source.nick == connection.get_nickname():
             print(f"Joined {config.channel}", flush=True)
+            return
+
+        # Require exact nick!user@host; a nickname alone is not trustworthy.
+        # This allowlist is a convenience, not cryptographic authentication.
+        if (
+            self.autoop_hostmask
+            and event.target.lower() == config.channel.lower()
+            and str(event.source).lower() == self.autoop_hostmask
+        ):
+            connection.mode(config.channel, f"+o {event.source.nick}")
+            print("Auto-OP requested for configured IRC identity", flush=True)
 
     def on_disconnect(self, connection, event) -> None:
         print("Disconnected from IRC; reconnecting automatically", flush=True)
