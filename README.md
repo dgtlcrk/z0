@@ -172,6 +172,22 @@ reported. It does **not** modify inventory or equate gateway state with ping
 reachability. The existing gateway fetch disables TLS certificate validation
 for the local self-signed BGW320 and should be hardened before expansion.
 
+### Unified LAN Observations (read-only)
+
+Combine BGW320 historical and current device records with local ARP and ICMP
+observations without modifying persistent inventory:
+
+```bash
+z0 network unified
+z0 network unified --json
+```
+
+Device identity is keyed by MAC where available. Gateway `on/off` status is
+kept separate from observed reachability. `GATEWAY_ON` is not an ICMP
+confirmation, and devices missing from local discovery are not automatically
+marked offline. This initial command does not write to
+`~/.config/z0/network_inventory.json`.
+
 ### Network Neighbors
 
 Show the Linux kernel neighbor table:
