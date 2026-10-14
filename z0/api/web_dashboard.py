@@ -45,6 +45,9 @@ th{color:#94a3b8}
 <div class="card">Real transitions<strong id="events">—</strong></div>
 </div>
 <section><h2>Inventory states</h2><div id="states"></div></section>
+<section><h2>Saved device inventory</h2><table><thead><tr>
+<th>IP</th><th>Name</th><th>MAC</th><th>State</th>
+</tr></thead><tbody id="devicerows"></tbody></table></section>
 <section><h2>Monitored hosts</h2><table><thead><tr>
 <th>Address</th><th>Status</th><th>Last check (UTC)</th>
 </tr></thead><tbody id="hostrows"></tbody></table></section>
@@ -68,6 +71,11 @@ async function refresh(){
     const response=await fetch('/api/network/dashboard',{cache:'no-store'});
     if(!response.ok)throw Error('Server returned HTTP '+response.status);
     const data=await response.json();
+    const devicesResponse=await fetch('/api/network/devices',
+      {cache:'no-store'});
+    if(!devicesResponse.ok)throw Error('Device API returned HTTP '+
+      devicesResponse.status);
+    const devices=await devicesResponse.json();
     byId('devices').textContent=data.inventory.total;
     byId('online').textContent=data.inventory.confirmed_online_history;
     byId('hosts').textContent=data.monitoring.total;
@@ -75,6 +83,8 @@ async function refresh(){
     const stateText=Object.entries(data.inventory.states)
       .map(([key,count])=>key+': '+count).join('  ·  ');
     byId('states').textContent=stateText||'No saved devices';
+    showRows('devicerows',devices,[
+      d=>d.ip_address,d=>d.hostname,d=>d.mac_address,d=>d.state]);
     showRows('hostrows',data.monitoring.hosts,[
       h=>h.address,h=>h.state,h=>h.last_checked||'—']);
     showRows('eventrows',data.events.recent,[
