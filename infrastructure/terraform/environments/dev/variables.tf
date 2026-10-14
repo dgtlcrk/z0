@@ -30,13 +30,19 @@ variable "vpc_cidr" {
 }
 
 variable "irc_server" {
-  description = "IRC server reachable from AWS; specify explicitly."
+  description = "IRC server for standalone cloud node."
   type        = string
+  default     = "irc.prison.net"
+  validation {
+    condition     = var.irc_server == "irc.prison.net"
+    error_message = "This deployment is restricted to irc.prison.net."
+  }
 }
 
 variable "irc_channel" {
-  description = "Cloud bot channel; specify explicitly after verifying network authorization."
+  description = "IRC channel for cloud BotOps."
   type        = string
+  default     = "#skipland"
 }
 
 variable "irc_port" {
@@ -52,6 +58,13 @@ variable "irc_port" {
 variable "irc_nick" {
   type    = string
   default = "z0_cloud_01"
+}
+
+variable "irc_tls_ca_secret_arn" {
+  description = "Existing Secrets Manager ARN for independently verified irc.prison.net PEM certificate."
+  type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "irc_op_secret_arn" {
