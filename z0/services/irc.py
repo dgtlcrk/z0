@@ -17,6 +17,16 @@ from z0.services.op_auth import OpAuthenticator
 MAX_IRC_MESSAGE_LENGTH = 350
 
 
+def create_irc_ssl_context() -> ssl.SSLContext:
+    """Load system trust plus an independently verified IRC server PEM."""
+    context = ssl.create_default_context()
+    custom_ca = os.getenv("IRC_TLS_CA_PEM", "").strip()
+    if custom_ca:
+        context.load_verify_locations(cadata=custom_ca)
+    return context
+
+
+
 class Z0Bot(irc.bot.SingleServerIRCBot):
     def __init__(self) -> None:
         secret = os.getenv("IRC_OP_SECRET", "")
@@ -24,7 +34,7 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
         connect_factory = (
             irc.connection.Factory(
                 wrapper=partial(
-                    ssl.create_default_context().wrap_socket,
+                    create_irc_ssl_context().wrap_socket,
                     server_hostname=config.server,
                 )
             )
