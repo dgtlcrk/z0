@@ -611,3 +611,17 @@ failures (default 3) transition to `UNAVAILABLE`, and consecutive successes
 separate `~/.config/z0/availability_simulation_v1.json` file; repeated
 invocations resume the simulated state. The real availability history and
 unified inventory are not modified. No scheduler or alerts are added.
+
+### Real manual availability event history
+
+```bash
+z0 network availability --ip 192.168.1.254
+z0 network availability-events
+z0 network availability-events --json
+```
+
+Manual probes now append a timestamped event **only when the confirmed
+availability state changes** (for example, UNCONFIRMED to UNAVAILABLE or
+UNAVAILABLE to AVAILABLE). Events are saved atomically with the host states
+in the same `availability_v1.json` file. Older v1 files without events
+remain readable. No scheduler, alerts, or automatic probing are introduced.
