@@ -548,10 +548,13 @@ def main() -> None:
                 print(f"UNI Status      : {record['uni_status']}")
 
         elif args.network_command == "gateway-devices":
-            records = [
-                device.to_dict()
-                for device in collect_gateway_devices(html_file=args.html_file)
-            ]
+            try:
+                records = [
+                    device.to_dict()
+                    for device in collect_gateway_devices(html_file=args.html_file)
+                ]
+            except (OSError, TimeoutError) as error:
+                parser.exit(1, f"Unable to read BGW320 device page: {error}\n")
             if args.json:
                 _print_json(records)
             else:
