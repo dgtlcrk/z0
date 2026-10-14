@@ -39,7 +39,7 @@ class GatewayStatus:
         return asdict(self)
 
 
-def _fetch(gateway: str, path: str) -> str:
+def _fetch(gateway: str, path: str, *, timeout: float = 5) -> str:
     url = f"https://{gateway}{path}"
 
     context = ssl.create_default_context()
@@ -53,7 +53,7 @@ def _fetch(gateway: str, path: str) -> str:
 
     with urllib.request.urlopen(
         request,
-        timeout=5,
+        timeout=timeout,
         context=context,
     ) as response:
         return response.read().decode(
