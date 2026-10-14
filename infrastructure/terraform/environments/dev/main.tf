@@ -7,12 +7,19 @@ data "aws_availability_zones" "available" {
 locals {
   name      = "z0-cloud-01"
   image_uri = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/z0:${var.image_tag}"
-  secret_env = var.irc_op_secret_arn == null ? [] : [
+  op_secret_env = var.irc_op_secret_arn == null ? [] : [
     {
       name      = "IRC_OP_SECRET"
       valueFrom = var.irc_op_secret_arn
     }
   ]
+  tls_secret_env = var.irc_tls_ca_secret_arn == null ? [] : [
+    {
+      name      = "IRC_TLS_CA_PEM"
+      valueFrom = var.irc_tls_ca_secret_arn
+    }
+  ]
+  secret_env = concat(local.op_secret_env, local.tls_secret_env)
 }
 
 resource "aws_vpc" "cloud" {
@@ -119,7 +126,7 @@ resource "aws_iam_role_policy_attachment" "execution" {
 }
 
 resource "aws_iam_role_policy" "secret_read" {
-  count = var.irc_op_secret_arn == null ? 0 : 1
+  count = length(compact([var.irc_op_secret_arn, var.irc_tls_ca_secret_arn])) == 0 ? 0 : 1
   name  = "${local.name}-secret-read"
   role  = aws_iam_role.execution.id
   policy = jsonencode({
@@ -127,7 +134,7 @@ resource "aws_iam_role_policy" "secret_read" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["secretsmanager:GetSecretValue"]
-      Resource = var.irc_op_secret_arn
+      Resource = compact([var.irc_op_secret_arn, var.irc_tls_ca_secret_arn])
     }]
   })
 }
@@ -199,6 +206,10 @@ resource "aws_ecs_service" "bot" {
     precondition {
       condition     = data.aws_caller_identity.current.account_id == var.aws_account_id
       error_message = "AWS account mismatch: refusing to deploy into an unexpected account."
+    }
+    precondition {
+      condition     = !var.enable_bot || var.irc_tls_ca_secret_arn != null
+      error_message = "A verified TLS trust secret is required before enabling the bot."
     }
   }
 
