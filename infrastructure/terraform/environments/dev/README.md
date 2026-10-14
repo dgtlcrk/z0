@@ -11,9 +11,9 @@ A **standalone 24/7 ARM64 IRC/BotOps task** on Amazon ECS Fargate in us-east-1. 
 - Optional existing Secrets Manager secret for IRC_OP_SECRET; secret value never stored in Terraform.
 - No ALB, NAT gateway, RDS, home tunnel, or public listener.
 
-## Safety gate\n\nThe ECS service uses `enable_bot = false` by default, so a first Terraform apply provisions the service at desired count 0, **not** a running 24/7 bot. Do not turn it on until TLS-capable IRC application code is merged and tested, the destination approves bot connections, and deployment checks are complete. `enable_bot = true` is the explicitly reviewed production target.\n\n## Prerequisites before applying
+## Safety gate\n\nThe ECS service uses `enable_bot = false` by default, so a first Terraform apply provisions the service at desired count 0, **not** a running 24/7 bot. Do not turn it on until TLS-capable IRC application code is merged, tested against the chosen server, and its updated image published to ECR, the destination approves bot connections, and deployment checks are complete. `enable_bot = true` is the explicitly reviewed production target.\n\n## Prerequisites before applying
 
-1. Review IRC server policy and approve server/channel. Current Python IRC code does **not** set up SSL/TLS; default port 6667 uses plaintext IRC. Do not switch to 6697 assuming TLS is enabled.
+1. Review IRC server policy and approve server/channel. The cloud branch now supports certificate-verified IRC TLS via `IRC_TLS=true`, and ECS sets port 6697 by default. Verify the real server supports TLS and performs an actual handshake before enabling the bot. Existing home configuration defaults to plaintext until explicitly opted in.
 2. Ensure the ECR SHA tag exists. This configuration initially pins `f595462a6e7a`.
 3. Bootstrap a dedicated S3 Terraform-state bucket following `../../bootstrap-state/README.md` with versioning, encryption, public-access block, and restricted IAM access. Fill backend.hcl from backend.hcl.example. Backend initialization is deliberately blocked until this is done.
 4. Prepare a separate least-privilege Terraform provisioner role; the ECR push role cannot create ECS/networking.
@@ -45,5 +45,5 @@ terraform plan -out=deploy.tfplan
 - ECS service is intended to run 24/7 after explicit enablement, but offers no availability SLA or application heartbeat yet.
 - Network diagnostic commands (ping/traceroute) may require further testing and permissions under Fargate; do not presume they work.
 - This container is the IRC BotOps workload, not the separate z0 API, scheduler, or home-network inventory.
-- For secure IRC, implement and test TLS support in the application and select an approved TLS endpoint before production.
+- TLS implementation is now in the branch, but end-to-end server verification and publishing the updated image remain required before production.
 - Add CloudWatch alarms, cost budgets, and a separately scoped GitHub deployment role before enabling automated deployments. A GitHub Actions static validation workflow now checks formatting and validation on PRs, but does not plan/apply infrastructure.
