@@ -1,0 +1,13 @@
+# Template for the standalone z0-cloud-01 IRC task.
+# Remains disabled until deployment review and a TLS-capable image are ready.
+enable_bot = false
+irc_server  = "irc.prison.net"
+irc_channel = "#skipland"
+irc_port    = 6697
+irc_nick    = "z0_cloud_01"
+
+# TOFU-pinned, TLS/hostname-verified server certificate in Secrets Manager.
+irc_tls_ca_secret_arn = "arn:aws:secretsmanager:us-east-1:209586344300:secret:z0/irc/tls-ca-UQaPJs"
+
+# Optional HMAC OP credential stored separately in Secrets Manager:
+# irc_op_secret_arn = "arn:aws:secretsmanager:us-east-1:209586344300:secret:your-secret"
