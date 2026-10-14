@@ -572,3 +572,26 @@ The BGW320-only `on` state is reported as `GATEWAY_REPORTED`. Devices
 without a confirmed reachability history never become suspect solely because
 they are old gateway records. Offline confirmation requires negative-probe
 history not yet stored by schema v2. No notifications or schedules are created.
+
+### Manual availability monitoring (opt-in)
+
+Each invocation runs **one** ICMP check per explicitly selected private IPv4 target:
+
+```bash
+z0 network availability --ip 192.168.1.254
+z0 network availability --ip 192.168.1.254 --ip 192.168.1.229
+z0 network availability --ip 192.168.1.254 --failures 3 --recovery 2
+z0 network availability-list --json
+```
+
+The first failed check does not establish an outage. After three consecutive
+failed manual checks a target is `UNAVAILABLE`. Two consecutive successful
+checks restore `AVAILABLE`; until a threshold is met a new target is
+`UNCONFIRMED`. Failed probes are ICMP failures only: devices that do not
+respond to ping can be listed unavailable despite still being powered on.
+
+Results are persisted in a separate versioned file,
+`~/.config/z0/availability_v1.json`. The unified and legacy network
+inventories are unaffected. No scheduler, alerts, or background jobs are
+installed. Only explicitly supplied private IPv4 addresses are probed;
+maximum 16 per call. Avoid monitoring sleeping mobile devices.
