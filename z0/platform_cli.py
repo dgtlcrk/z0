@@ -14,6 +14,7 @@ from z0.api.snapshot import build_snapshot
 from z0.botops.render import render_banner
 from z0.config import config
 from z0.network import collect_network_status
+from z0.network.availability import check_targets, load_availability
 from z0.network.devices import collect_devices
 from z0.network.discovery import discover_hosts
 from z0.network.gateway import collect_gateway_status
@@ -409,6 +410,19 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    availability = network_sub.add_parser(
+        "availability", help="Manually check explicitly selected private IPv4 hosts"
+    )
+    availability.add_argument("--ip", action="append", required=True)
+    availability.add_argument("--failures", type=int, default=3)
+    availability.add_argument("--recovery", type=int, default=2)
+    availability.add_argument("--json", action="store_true")
+
+    availability_list = network_sub.add_parser(
+        "availability-list", help="Read saved manual availability states"
+    )
+    availability_list.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -506,6 +520,31 @@ def main() -> None:
         elif args.jobs_command == "daemon":
             scheduler.serve_forever(args.poll)
 
+        return
+
+    if args.command == "network" and args.network_command in {
+        "availability", "availability-list"
+    }:
+        try:
+            records = (
+                check_targets(
+                    args.ip, failure_threshold=args.failures,
+                    recovery_threshold=args.recovery,
+                )
+                if args.network_command == "availability"
+                else list(load_availability().values())
+            )
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f"Availability check failed: {error}\n")
+        if args.json:
+            _print_json([item.to_dict() for item in records])
+        else:
+            print(f"Manual availability records: {len(records)}")
+            for item in records:
+                print(
+                    f"{item.address:<16} {item.state:<14} "
+                    f"successes={item.successes} failures={item.failures}"
+                )
         return
 
     if args.command == "network":
