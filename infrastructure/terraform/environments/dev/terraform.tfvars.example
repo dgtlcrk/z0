@@ -1,4 +1,6 @@
-# Copy to terraform.tfvars after choosing the IRC deployment target.
+# Copy to terraform.tfvars after choosing an approved IRC deployment target.
+# Default false prevents starting the container with plaintext IRC.
+enable_bot = false
 irc_server  = "REPLACE_WITH_APPROVED_IRC_SERVER"
 irc_channel = "#REPLACE_WITH_APPROVED_CHANNEL"
 irc_nick    = "z0_cloud_01"
