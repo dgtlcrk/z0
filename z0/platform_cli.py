@@ -20,8 +20,8 @@ from z0.network.gateway import collect_gateway_status
 from z0.network.gateway_devices import collect_gateway_devices
 from z0.network.inventory import inventory_devices, update_inventory
 from z0.network.neighbors import collect_neighbors
-from z0.network.unified import collect_unified_devices
 from z0.network.tracked_inventory import load_tracked, update_tracked
+from z0.network.unified import collect_unified_devices
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
