@@ -36,7 +36,9 @@ def is_generic_hostname(hostname: str) -> bool:
     return not name or name.startswith("unknown")
 
 
-def identification(device: dict[str, object], labels: dict[str, str]) -> dict[str, object]:
+def identification(
+    device: dict[str, object], labels: dict[str, str]
+) -> dict[str, object]:
     """Derive an honest display identity without altering observed data."""
     mac = str(device.get("mac_address") or "").lower()
     ip = str(device.get("ip_address") or "")
