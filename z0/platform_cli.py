@@ -16,6 +16,7 @@ from z0.config import config
 from z0.network import collect_network_status
 from z0.network.availability import check_targets, load_availability, load_events
 from z0.network.availability_simulation import load_simulation, simulate
+from z0.network.dashboard import build_monitoring_dashboard
 from z0.network.devices import collect_devices
 from z0.network.discovery import discover_hosts
 from z0.network.gateway import collect_gateway_status
@@ -443,6 +444,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sim_history.add_argument("--json", action="store_true")
 
+    dashboard = network_sub.add_parser(
+        "dashboard", help="Show saved inventory and monitoring summary"
+    )
+    dashboard.add_argument("--json", action="store_true")
+    dashboard.add_argument("--events", type=int, default=10)
+
     return parser
 
 
@@ -540,6 +547,39 @@ def main() -> None:
         elif args.jobs_command == "daemon":
             scheduler.serve_forever(args.poll)
 
+        return
+
+    if args.command == "network" and args.network_command == "dashboard":
+        try:
+            data = build_monitoring_dashboard(recent_limit=args.events)
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f"Monitoring dashboard failed: {error}\n")
+        if args.json:
+            _print_json(data)
+        else:
+            inventory = data["inventory"]
+            monitoring = data["monitoring"]
+            events = data["events"]
+            print("z0_n3t Monitoring Dashboard (saved data / read-only)")
+            print(f"Tracked devices     : {inventory['total']}")
+            print(f"Inventory states    : {inventory['states']}")
+            print(
+                "Confirmed online history: "
+                f"{inventory['confirmed_online_history']}"
+            )
+            print(f"Monitored hosts     : {monitoring['total']}")
+            print(f"Availability states : {monitoring['states']}")
+            for host in monitoring["hosts"]:
+                print(
+                    f"  {host['address']:<16} {host['state']:<14} "
+                    f"last checked: {host['last_checked'] or '-'}"
+                )
+            print(f"Recorded real events: {events['total']}")
+            for event in events["recent"]:
+                print(
+                    f"  {event['timestamp']} {event['address']} "
+                    f"{event['old_state']} -> {event['new_state']}"
+                )
         return
 
     if args.command == "network" and args.network_command in {
