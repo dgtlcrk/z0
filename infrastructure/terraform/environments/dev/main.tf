@@ -5,8 +5,8 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  name       = "z0-cloud-01"
-  image_uri  = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/z0:${var.image_tag}"
+  name      = "z0-cloud-01"
+  image_uri = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/z0:${var.image_tag}"
   secret_env = var.irc_op_secret_arn == null ? [] : [
     {
       name      = "IRC_OP_SECRET"
@@ -19,7 +19,7 @@ resource "aws_vpc" "cloud" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
-  tags = { Name = "${local.name}-vpc" }
+  tags                 = { Name = "${local.name}-vpc" }
 }
 
 resource "aws_internet_gateway" "cloud" {
@@ -32,7 +32,7 @@ resource "aws_subnet" "public" {
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, 0)
   availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = false
-  tags = { Name = "${local.name}-public-a" }
+  tags                    = { Name = "${local.name}-public-a" }
 }
 
 resource "aws_route_table" "public" {
@@ -54,7 +54,7 @@ resource "aws_security_group" "task" {
   description            = "Outbound-only z0 BotOps ECS task"
   vpc_id                 = aws_vpc.cloud.id
   revoke_rules_on_delete = true
-  tags = { Name = "${local.name}-task" }
+  tags                   = { Name = "${local.name}-task" }
 }
 
 resource "aws_vpc_security_group_egress_rule" "https" {
@@ -181,8 +181,8 @@ resource "aws_ecs_service" "bot" {
   cluster         = aws_ecs_cluster.cloud.id
   task_definition = aws_ecs_task_definition.bot.arn
   # Intentionally off until IRC TLS and deployment prerequisites are verified.
-  desired_count   = var.enable_bot ? 1 : 0
-  launch_type     = "FARGATE"
+  desired_count    = var.enable_bot ? 1 : 0
+  launch_type      = "FARGATE"
   platform_version = "LATEST"
 
   deployment_minimum_healthy_percent = 0
