@@ -535,3 +535,24 @@ GitHub: **dgtlcrk**
 Licensed under the Apache License, Version 2.0.
 
 See `LICENSE` for the complete license terms.
+
+### Opt-in version-2 unified inventory
+
+The new persistent unified inventory is independent of the existing
+`~/.config/z0/network_inventory.json` file and does not modify it.
+
+```bash
+z0 inventory unified-list
+z0 inventory unified-update
+z0 inventory unified-list --json
+```
+
+The first `unified-update` creates
+`~/.config/z0/unified_inventory_v2.json` using atomic file replacement.
+Records retain first observed, last observed, last independently confirmed
+online (ICMP/local), observation counts, and the latest source list. Devices
+missing from a later scan become `NOT_OBSERVED`, **not OFFLINE**. The BGW320
+`on` indication is not independently confirmed reachability. If the stored
+JSON is corrupt or has an unfamiliar schema, updates abort instead of wiping
+records. The command is manual/opt-in and does not install a scheduled task.
+
