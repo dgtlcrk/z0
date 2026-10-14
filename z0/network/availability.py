@@ -34,6 +34,32 @@ class HostAvailability:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class AvailabilityEvent:
+    address: str
+    timestamp: str
+    old_state: str
+    new_state: str
+    result: str
+
+    def to_dict(self) -> dict[str, str]:
+        return asdict(self)
+
+
+def load_events(path: Path = DEFAULT_PATH) -> list[AvailabilityEvent]:
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or data.get("version") != SCHEMA_VERSION:
+        raise ValueError("Unsupported availability schema")
+    if not isinstance(data.get("hosts"), dict):
+        raise ValueError("Invalid availability records")
+    raw = data.get("events", [])
+    if not isinstance(raw, list):
+        raise ValueError("Invalid availability events")
+    return [AvailabilityEvent(**event) for event in raw]
+
+
 def normalize_targets(addresses: list[str]) -> list[str]:
     """Reject anything other than explicit unicast IPv4 addresses."""
     if not addresses:
@@ -113,13 +139,17 @@ def probe_once(address: str) -> bool:
 
 
 def save_availability(
-    hosts: dict[str, HostAvailability], path: Path = DEFAULT_PATH
+    hosts: dict[str, HostAvailability], path: Path = DEFAULT_PATH,
+    *, events: list[AvailabilityEvent] | None = None,
 ) -> None:
+    if events is None:
+        events = load_events(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     data = json.dumps(
         {"version": SCHEMA_VERSION, "hosts": {
             key: value.to_dict() for key, value in sorted(hosts.items())
-        }}, indent=2, sort_keys=True,
+        }, "events": [event.to_dict() for event in events]},
+        indent=2, sort_keys=True,
     ) + "\n"
     name: str | None = None
     try:
@@ -147,15 +177,23 @@ def check_targets(
     if failure_threshold < 1 or recovery_threshold < 1:
         raise ValueError("Probe thresholds must be positive")
     hosts = load_availability(path)
+    events = load_events(path)
     # Probe every target first so a subprocess failure cannot partially persist.
     outcomes = {address: probe_once(address) for address in targets}
     timestamp = datetime.now(UTC).isoformat()
     for address, success in outcomes.items():
-        hosts[address] = transition(
-            hosts.get(address, HostAvailability(address=address)),
-            success, timestamp=timestamp,
+        previous = hosts.get(address, HostAvailability(address=address))
+        updated = transition(
+            previous, success, timestamp=timestamp,
             failure_threshold=failure_threshold,
             recovery_threshold=recovery_threshold,
         )
-    save_availability(hosts, path)
+        hosts[address] = updated
+        if updated.state != previous.state:
+            events.append(AvailabilityEvent(
+                address=address, timestamp=timestamp,
+                old_state=previous.state, new_state=updated.state,
+                result="SUCCESS" if success else "FAILURE",
+            ))
+    save_availability(hosts, path, events=events)
     return [hosts[address] for address in targets]
