@@ -29,6 +29,7 @@ background:#334155;font-size:.8rem}
 .pill.stale,.pill.not_observed{color:#fcd34d;background:#78350f}
 .pill.unavailable{color:#fca5a5;background:#7f1d1d}
 .controls label{display:flex;align-items:center;gap:7px}
+.controls input[type=checkbox]{min-width:0;flex:none}
 #devicerows tr{cursor:pointer}
 #devicerows tr:hover,#devicerows tr:focus{background:#253651;outline:2px solid #60a5fa}
 #details[hidden]{display:none}
@@ -81,9 +82,11 @@ placeholder="Search IP, name or MAC">
 <option value="name">Device name</option>
 <option value="state">State</option>
 <option value="mac">MAC address</option>
-</select></label></div>
+</select></label>
+<label><input type="checkbox" id="unidentifiedOnly"> Unidentified only</label>
+</div>
 <p id="shown" class="muted" aria-live="polite"></p><table><thead><tr>
-<th>IP</th><th>Name</th><th>MAC</th><th>State</th>
+<th>IP</th><th>Name</th><th>Identity</th><th>MAC</th><th>State</th>
 </tr></thead><tbody id="devicerows"></tbody></table></section>
 <section id="details" hidden tabindex="-1" aria-label="Selected device details">
 <button id="detailclose" type="button">Close details</button>
@@ -121,10 +124,12 @@ function stateBadge(state){
 function renderDevices(){
   const query=byId('search').value.trim().toLowerCase();
   const state=byId('stateFilter').value;
+  const unknownOnly=byId('unidentifiedOnly').checked;
   const sort=byId('sort').value;
   const key={ip:'ip_address',name:'display_name',state:'state',mac:'mac_address'}[sort];
   const matches=savedDevices.filter(d=>
     (!state||d.state===state)&&
+    (!unknownOnly||d.identification_source==='unidentified')&&
     [d.ip_address,d.display_name,d.hostname,d.mac_address,d.state]
       .some(v=>String(v||'').toLowerCase().includes(query)));
   matches.sort((a,b)=>String(a[key]||'').localeCompare(
@@ -145,13 +150,18 @@ function renderDevices(){
     });
     cell(tr,device.ip_address||'—');
     cell(tr,device.display_name||device.hostname||'—');
+    const identity={
+      operator_label:'Your label',observed_hostname:'Observed',
+      unidentified:'Unidentified'
+    }[device.identification_source]||'Unclassified';
+    cell(tr,identity);
     cell(tr,device.mac_address||'—');
     const td=document.createElement('td');
     td.append(stateBadge(device.state));tr.append(td);
     tbody.append(tr);
   }
   if(!matches.length){const tr=document.createElement('tr');
-    const td=document.createElement('td');td.colSpan=4;
+    const td=document.createElement('td');td.colSpan=5;
     td.textContent='No matching devices';tr.append(td);tbody.append(tr)}
   byId('shown').textContent='Showing '+matches.length+' of '+
     savedDevices.length+' devices';
@@ -205,7 +215,11 @@ async function openDetails(device){
     if(selectedIdentifier!==identifier)return;
     const d=data.device;
     for(const [name,value] of Object.entries({
-      'Friendly name':d.display_name,'Observed hostname':d.hostname,
+      'Display name':d.display_name,'Observed hostname':d.hostname,
+      'Identity source':({operator_label:'Operator label',
+        observed_hostname:'Observed hostname',
+        unidentified:'Unidentified'}[d.identification_source]||'Not reported'),
+      'Locally administered MAC':d.locally_administered_mac?'Yes':'No',
       'IP address':d.ip_address,'MAC address':d.mac_address,
       'Inventory state':d.state,'Gateway status':d.gateway_status,
       'Connection type':d.connection_type,
@@ -273,7 +287,7 @@ async function refresh(){
   finally{byId('refresh').disabled=false}
 }
 byId('refresh').addEventListener('click',refresh);
-for(const name of ['search','stateFilter','sort']){
+for(const name of ['search','stateFilter','sort','unidentifiedOnly']){
   byId(name).addEventListener(name==='search'?'input':'change',renderDevices);
 }
 refresh();
