@@ -48,7 +48,10 @@ class OpAuthenticator:
         pending = self.pending.get(identity)
         if not pending:
             return False
-        if time.monotonic() >= pending.expires_at or pending.channel.lower() != channel.lower():
+        if (
+            time.monotonic() >= pending.expires_at
+            or pending.channel.lower() != channel.lower()
+        ):
             self.pending.pop(identity, None)
             return False
         pending.attempts += 1
