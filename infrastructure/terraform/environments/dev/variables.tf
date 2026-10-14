@@ -17,7 +17,7 @@ variable "aws_account_id" {
 variable "image_tag" {
   description = "Immutable Git commit-based ECR image tag; never use latest."
   type        = string
-  default     = "f595462a6e7a"
+  default     = "a129e165da94"
   validation {
     condition     = can(regex("^[0-9a-f]{12}$", var.image_tag))
     error_message = "Use a 12-character Git commit SHA image tag."
