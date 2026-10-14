@@ -28,6 +28,7 @@ from z0.dockerops import (
     docker_error_payload,
 )
 from z0.network.dashboard import build_monitoring_dashboard
+from z0.network.device_details import get_device_details
 from z0.network.device_labels import label_devices, load_device_labels
 from z0.network.tracked_inventory import load_tracked
 
@@ -37,6 +38,7 @@ API_ENDPOINTS = [
     "/monitor",
     "/api/network/dashboard",
     "/api/network/devices",
+    "/api/network/device?mac=MAC",
     "/api/status",
     "/api/system",
     "/api/inventory",
@@ -461,6 +463,29 @@ class Z0RequestHandler(
 
         if path == "/monitor":
             self._send_html(PAGE)
+            return
+
+        if path == "/api/network/device":
+            identifier = self._first_query_value(query, "mac").strip()
+            if not identifier or len(identifier) > 64:
+                self._send_error_payload(
+                    HTTPStatus.BAD_REQUEST, "A valid mac parameter is required"
+                )
+                return
+            try:
+                details = get_device_details(identifier)
+            except (OSError, ValueError, TypeError, KeyError) as exc:
+                self._send_error_payload(
+                    HTTPStatus.SERVICE_UNAVAILABLE,
+                    f"Saved device details unavailable: {exc}",
+                )
+                return
+            if details is None:
+                self._send_error_payload(
+                    HTTPStatus.NOT_FOUND, "Device not found in saved inventory"
+                )
+                return
+            self._send_json(details)
             return
 
         if path in {"/api/network/dashboard", "/api/network/devices"}:
