@@ -13,6 +13,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
+from z0.network.alert_delivery import (
+    connect, deliver_pending, enqueue_new_events,
+)
 from z0.network.availability import (
     DEFAULT_PATH as AVAILABILITY_PATH,
 )
@@ -29,16 +32,17 @@ DEFAULT_LOCK = Path.home() / ".config" / "z0" / "monitoring.lock"
 def load_config(path: Path = DEFAULT_CONFIG) -> dict[str, object]:
     """Strict configuration; absent config means no checks."""
     if not path.exists():
-        return {"enabled": False, "targets": [], "notify": False}
+        return {"enabled": False, "targets": [], "notify": False, "alerts": False}
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("Monitoring configuration must be a JSON object")
-    if set(data) - {"enabled", "targets", "notify"}:
+    if set(data) - {"enabled", "targets", "notify", "alerts"}:
         raise ValueError("Unknown monitoring configuration keys")
     enabled = data.get("enabled", False)
     notify = data.get("notify", False)
+    alerts = data.get("alerts", False)
     targets = data.get("targets", [])
-    if not isinstance(enabled, bool) or not isinstance(notify, bool):
+    if not all(isinstance(v, bool) for v in (enabled, notify, alerts)):
         raise ValueError("Monitoring enabled and notify must be booleans")
     if not isinstance(targets, list) or not all(
         isinstance(address, str) for address in targets
@@ -49,7 +53,8 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict[str, object]:
     elif targets:
         # Still reject unsafe targets in disabled configurations.
         targets = normalize_targets(targets)
-    return {"enabled": enabled, "notify": notify, "targets": targets}
+    return {"enabled": enabled, "notify": notify, "alerts": alerts,
+            "targets": targets}
 
 
 @contextmanager
@@ -82,8 +87,20 @@ def run_once(
         raise ValueError("Invalid targets")
     with exclusive_lock(lock_path):
         old_events = load_events(availability_path)
+        if settings["alerts"]:
+            with connect() as db:
+                enqueue_new_events(db, old_events)
         check_targets(targets, path=availability_path)
-        new_events = load_events(availability_path)[len(old_events):]
+        events = load_events(availability_path)
+        new_events = events[len(old_events):]
+        if settings["alerts"]:
+            with connect() as db:
+                enqueue_new_events(db, events)
+                deliver_pending(
+                    db,
+                    config_dir=Path.home() / ".config/z0",
+                    spool=Path.home() / ".config/z0/irc_alerts",
+                )
     if not settings["notify"]:
         return []
     return [
