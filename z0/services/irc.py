@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 import os
+from collections.abc import Callable
 
 import irc.bot
 
@@ -60,7 +60,9 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
         parts = event.arguments[0].strip().split()
         nick = event.source.nick
         if not parts or parts[0].lower() != "op":
-            self.send_response(connection, nick, "Usage: op #channel | op #channel <hmac>")
+            self.send_response(
+                connection, nick, "Usage: op #channel | op #channel <hmac>"
+            )
             return
         if self.op_auth is None:
             self.send_response(connection, nick, "OP authentication is disabled")
