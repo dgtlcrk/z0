@@ -11,3 +11,8 @@ irc_tls_ca_secret_arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:z0
 
 # Optional HMAC OP credential stored separately in Secrets Manager:
 # irc_op_secret_arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:your-secret"
+
+# Convenience auto-OP for the user's currently observed IRC identity.
+# IMPORTANT: IRC nick/ident/hostname are not cryptographic authentication.
+# Change this when the user's IP or ident changes; disabled by default.
+# irc_autoop_hostmask = "nas-!~exampleuser@198.51.100.10"
