@@ -684,3 +684,17 @@ inventory database. Labels appear as `display_name` in
 `/api/network/devices`; the original `hostname` remains unchanged. Leave
 the file absent to use observed names. Keep it private because it identifies
 your personal network devices.
+
+### Saved device details (read-only)
+
+In `/monitor`, click or keyboard-select a device row (Enter or Space)
+to open the device detail panel. It shows the saved observed name, any
+optional friendly label, IP, MAC, inventory state, source names, first and
+last observations, observation count, and the most recent confirmed
+online timestamp. If a matching IP has manual availability records, the
+panel shows its saved availability and all recorded real transitions.
+
+The `GET /api/network/device?mac=48:e2:ad:86:ff:61` endpoint returns
+the same detail data as JSON. It accepts an exact MAC or saved IP address
+under the `mac` parameter. Missing devices return 404. No scanning, probing,
+inventory edits, or activity scheduling occurs.

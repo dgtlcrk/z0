@@ -29,6 +29,15 @@ background:#334155;font-size:.8rem}
 .pill.stale,.pill.not_observed{color:#fcd34d;background:#78350f}
 .pill.unavailable{color:#fca5a5;background:#7f1d1d}
 .controls label{display:flex;align-items:center;gap:7px}
+#devicerows tr{cursor:pointer}
+#devicerows tr:hover,#devicerows tr:focus{background:#253651;outline:2px solid #60a5fa}
+#details[hidden]{display:none}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.detail-grid div{background:#0b1220;padding:12px;border-radius:8px;
+overflow-wrap:anywhere}
+.detail-grid strong{display:block;font-size:.8rem;color:#94a3b8;margin-bottom:4px}
+#detailclose{float:right;background:#334155}
+#details{border-color:#60a5fa}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
 gap:14px;margin:22px 0}
 .card,section{background:#172235;border:1px solid #304057;
@@ -72,6 +81,18 @@ placeholder="Search IP, name or MAC">
 <p id="shown" class="muted" aria-live="polite"></p><table><thead><tr>
 <th>IP</th><th>Name</th><th>MAC</th><th>State</th>
 </tr></thead><tbody id="devicerows"></tbody></table></section>
+<section id="details" hidden tabindex="-1" aria-label="Selected device details">
+<button id="detailclose" type="button">Close details</button>
+<h2 id="detailtitle">Device details</h2>
+<p class="muted">Saved data only · no active scans</p>
+<p id="detailerror" class="error" role="alert"></p>
+<div class="detail-grid" id="detailfields"></div>
+<h2 style="margin-top:20px">Availability monitoring</h2>
+<div id="detailavailability" class="muted"></div>
+<h2 style="margin-top:20px">Recorded transitions</h2>
+<table><thead><tr><th>Time (UTC)</th><th>From</th><th>To</th>
+</tr></thead><tbody id="detailevents"></tbody></table>
+</section>
 <section><h2>Monitored hosts</h2><table><thead><tr>
 <th>Address</th><th>Status</th><th>Last check (UTC)</th>
 </tr></thead><tbody id="hostrows"></tbody></table></section>
@@ -81,6 +102,7 @@ placeholder="Search IP, name or MAC">
 <script>
 const byId=id=>document.getElementById(id);
 let savedDevices=[];
+let selectedIdentifier='';
 function cell(row,value){let td=document.createElement('td');
 td.textContent=String(value??'');row.append(td)}
 function stateBadge(state){
@@ -104,6 +126,16 @@ function renderDevices(){
   tbody.replaceChildren();
   for(const device of matches){
     const tr=document.createElement('tr');
+    tr.tabIndex=0;
+    tr.setAttribute('role','button');
+    tr.setAttribute('aria-label','View details for '+
+      (device.display_name||device.hostname||device.mac_address));
+    tr.addEventListener('click',()=>openDetails(device));
+    tr.addEventListener('keydown',event=>{
+      if(event.key==='Enter'||event.key===' '){
+        event.preventDefault();openDetails(device);
+      }
+    });
     cell(tr,device.ip_address||'—');
     cell(tr,device.display_name||device.hostname||'—');
     cell(tr,device.mac_address||'—');
@@ -124,6 +156,63 @@ function showRows(target,items,columns){
   for(const item of items){let tr=document.createElement('tr');
     for(const fn of columns)cell(tr,fn(item));parent.append(tr)}
 }
+function detailField(name,value){
+  const item=document.createElement('div');
+  const label=document.createElement('strong');
+  label.textContent=name;item.append(label);
+  const content=document.createElement('span');
+  content.textContent=String(value??'—')||'—';
+  item.append(content);byId('detailfields').append(item);
+}
+async function openDetails(device){
+  const identifier=device.mac_address||device.ip_address;
+  if(!identifier)return;
+  selectedIdentifier=identifier;
+  byId('details').hidden=false;
+  byId('detailtitle').textContent='Device: '+
+    (device.display_name||device.hostname||identifier);
+  byId('detailfields').replaceChildren();
+  byId('detailavailability').textContent='Loading saved detail…';
+  byId('detailerror').textContent='';
+  byId('detailevents').replaceChildren();
+  byId('details').focus();
+  try{
+    const response=await fetch('/api/network/device?mac='+
+      encodeURIComponent(identifier),{cache:'no-store'});
+    if(!response.ok)throw Error('Device API returned HTTP '+response.status);
+    const data=await response.json();
+    if(selectedIdentifier!==identifier)return;
+    const d=data.device;
+    for(const [name,value] of Object.entries({
+      'Friendly name':d.display_name,'Observed hostname':d.hostname,
+      'IP address':d.ip_address,'MAC address':d.mac_address,
+      'Inventory state':d.state,'Gateway status':d.gateway_status,
+      'Connection type':d.connection_type,
+      'Sources':(d.sources||[]).join(', '),
+      'First seen (UTC)':d.first_seen,'Last observed (UTC)':d.last_observed,
+      'Last confirmed online (UTC)':d.last_confirmed_online,
+      'Observation count':d.observation_count,
+      'Last gateway activity':d.last_activity,
+    }))detailField(name,value);
+    const a=data.availability;
+    byId('detailavailability').textContent=a?
+      a.state+' · Last checked: '+(a.last_checked||'—')+
+      ' · Successful probes: '+a.successes+
+      ' · Consecutive failures: '+a.failures:
+      'No saved availability monitoring for this device';
+    showRows('detailevents',data.events,[
+      e=>e.timestamp,e=>e.old_state,e=>e.new_state]);
+  }catch(err){
+    if(selectedIdentifier===identifier){
+      byId('detailerror').textContent=err.message;
+      byId('detailavailability').textContent='Unable to load details';
+    }
+  }
+}
+byId('detailclose').addEventListener('click',()=>{
+  selectedIdentifier='';
+  byId('details').hidden=true;
+});
 async function refresh(){
   byId('refresh').disabled=true;byId('error').textContent='';
   try{
