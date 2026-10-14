@@ -20,6 +20,7 @@ from z0.network.gateway import collect_gateway_status
 from z0.network.gateway_devices import collect_gateway_devices
 from z0.network.inventory import inventory_devices, update_inventory
 from z0.network.neighbors import collect_neighbors
+from z0.network.unified import collect_unified_devices
 from z0.plugins.registry import build_plugin_registry
 from z0.scheduler.engine import Scheduler
 
@@ -311,6 +312,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--html-file", type=Path, help="Parse a saved BGW320 devices page"
     )
 
+    network_unified = network_sub.add_parser(
+        "unified", help="Read combined gateway and LAN observations"
+    )
+    network_unified.add_argument("--json", action="store_true")
+
     network_neighbors = network_sub.add_parser(
         "neighbors",
         help="Show kernel network neighbors",
@@ -573,6 +579,33 @@ def main() -> None:
                         f"{record['connection_type']}"
                     )
                 print(f"Gateway records: {len(records)}")
+
+        elif args.network_command == "unified":
+            try:
+                records = [
+                    device.to_dict() for device in collect_unified_devices()
+                ]
+            except (OSError, TimeoutError) as error:
+                parser.exit(1, f"Unable to collect unified LAN data: {error}\n")
+            if args.json:
+                _print_json(records)
+            else:
+                print("Unified LAN Observations (read-only)")
+                print(
+                    f"{'IP ADDRESS':<16} {'NAME':<25} {'MAC ADDRESS':<18} "
+                    f"{'STATE':<12} {'GW':<5} {'SOURCES'}"
+                )
+                print("-" * 110)
+                for record in records:
+                    print(
+                        f"{record['ip_address']:<16} "
+                        f"{record['hostname'][:25]:<25} "
+                        f"{record['mac_address']:<18} "
+                        f"{record['state']:<12} "
+                        f"{record['gateway_status']:<5} "
+                        f"{','.join(record['sources'])}"
+                    )
+                print(f"Unified records: {len(records)}")
 
         elif args.network_command == "neighbors":
             records = [
