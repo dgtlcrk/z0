@@ -663,3 +663,24 @@ If an API service already runs on port 8081, reuse that service after
 installing the new code; do not launch a second instance on the same port.
 Avoid exposing these local device details on an unauthenticated public
 interface. The existing API configuration determines its bind address.
+
+### Web inventory search, filters and friendly labels
+
+The browser monitoring page at `/monitor` supports client-side searching by
+IP, name, state and MAC; state filters; IP/name/state/MAC sorting; and compact
+state indicators. Refresh reloads saved data only.
+
+Optionally create `~/.config/z0/device_labels.json` with a mapping from
+real MAC addresses to your own device names:
+
+```json
+{
+  "ea:5b:ca:3d:17:c2": "My MacBook Air"
+}
+```
+
+This separate file is **read-only to z0**. It never changes the unified
+inventory database. Labels appear as `display_name` in
+`/api/network/devices`; the original `hostname` remains unchanged. Leave
+the file absent to use observed names. Keep it private because it identifies
+your personal network devices.
