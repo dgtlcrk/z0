@@ -403,7 +403,10 @@ def build_parser() -> argparse.ArgumentParser:
     assess.add_argument("--json", action="store_true")
     assess.add_argument(
         "--stale-hours", type=float, default=24,
-        help="Hours after last observation before a previously online missing device is SUSPECT",
+        help=(
+            "Hours since last observation before a previously online "
+            "missing device becomes SUSPECT"
+        ),
     )
 
     return parser
