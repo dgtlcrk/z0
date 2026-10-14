@@ -176,7 +176,7 @@ def send_irc(message: str, key: str, spool: Path) -> bool:
             encoding="utf-8",
         ) as handle:
             filename = handle.name
-            os.chmod(filename, 0o600)
+            os.chmod(filename, 0o640)
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
