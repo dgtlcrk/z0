@@ -3,5 +3,6 @@
 enable_bot = false
 irc_server  = "REPLACE_WITH_APPROVED_IRC_SERVER"
 irc_channel = "#REPLACE_WITH_APPROVED_CHANNEL"
+irc_port    = 6697
 irc_nick    = "z0_cloud_01"
 # irc_op_secret_arn = "arn:aws:secretsmanager:us-east-1:209586344300:secret:your-secret"
