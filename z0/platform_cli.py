@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from z0.adapters.registry import build_adapter_registry
@@ -16,6 +17,7 @@ from z0.network import collect_network_status
 from z0.network.devices import collect_devices
 from z0.network.discovery import discover_hosts
 from z0.network.gateway import collect_gateway_status
+from z0.network.gateway_devices import collect_gateway_devices
 from z0.network.inventory import inventory_devices, update_inventory
 from z0.network.neighbors import collect_neighbors
 from z0.plugins.registry import build_plugin_registry
@@ -298,6 +300,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
 
+    gateway_devices = network_sub.add_parser(
+        "gateway-devices",
+        help="Read BGW320 LAN-side device records",
+    )
+    gateway_devices.add_argument(
+        "--json", action="store_true", help="Output structured JSON"
+    )
+    gateway_devices.add_argument(
+        "--html-file", type=Path, help="Parse a saved BGW320 devices page"
+    )
+
     network_neighbors = network_sub.add_parser(
         "neighbors",
         help="Show kernel network neighbors",
@@ -533,6 +546,30 @@ def main() -> None:
                 print(f"TX Errors       : {record['transmit_errors']}")
                 print(f"PON Status      : {record['pon_status']}")
                 print(f"UNI Status      : {record['uni_status']}")
+
+        elif args.network_command == "gateway-devices":
+            records = [
+                device.to_dict()
+                for device in collect_gateway_devices(html_file=args.html_file)
+            ]
+            if args.json:
+                _print_json(records)
+            else:
+                print("BGW320 LAN Devices")
+                print(
+                    f"{'IP ADDRESS':<16} {'NAME':<30} "
+                    f"{'MAC ADDRESS':<18} {'STATUS':<8} {'CONNECTION'}"
+                )
+                print("-" * 105)
+                for record in records:
+                    print(
+                        f"{record['ipv4_address']:<16} "
+                        f"{record['name'][:30]:<30} "
+                        f"{record['mac_address']:<18} "
+                        f"{record['status']:<8} "
+                        f"{record['connection_type']}"
+                    )
+                print(f"Gateway records: {len(records)}")
 
         elif args.network_command == "neighbors":
             records = [
