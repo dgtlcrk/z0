@@ -14,7 +14,7 @@ from z0.api.snapshot import build_snapshot
 from z0.botops.render import render_banner
 from z0.config import config
 from z0.network import collect_network_status
-from z0.network.availability import check_targets, load_availability
+from z0.network.availability import check_targets, load_availability, load_events
 from z0.network.availability_simulation import load_simulation, simulate
 from z0.network.devices import collect_devices
 from z0.network.discovery import discover_hosts
@@ -424,6 +424,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     availability_list.add_argument("--json", action="store_true")
 
+    events_cmd = network_sub.add_parser(
+        "availability-events", help="Read real availability transitions"
+    )
+    events_cmd.add_argument("--json", action="store_true")
+
     sim = network_sub.add_parser(
         "availability-simulate", help="Replay S/F checks offline; no ping"
     )
@@ -577,6 +582,23 @@ def main() -> None:
                         f"{event.timestamp} {event.address}: "
                         f"{event.old_state} -> {event.new_state}"
                     )
+        return
+
+    if args.command == "network" and args.network_command == "availability-events":
+        try:
+            events = load_events()
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f"Availability events failed: {error}\n")
+        if args.json:
+            _print_json([event.to_dict() for event in events])
+        else:
+            print(f"Real availability transitions: {len(events)}")
+            for event in events:
+                print(
+                    f"{event.timestamp} {event.address}: "
+                    f"{event.old_state} -> {event.new_state} "
+                    f"({event.result})"
+                )
         return
 
     if args.command == "network" and args.network_command in {
