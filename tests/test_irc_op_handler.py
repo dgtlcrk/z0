@@ -20,13 +20,6 @@ class FakeConnection:
         self.modes.append((channel, modes))
 
 
-def event(text, source="nas-!exampleuser@trusted"):
-    return SimpleNamespace(
-        source=SimpleNamespace(nick=source.split("!", 1)[0], __str__=lambda self: source),
-        arguments=[text],
-    )
-
-
 def send(bot, connection, text):
     # A SimpleNamespace instance's __str__ attribute doesn't override str().
     source = "nas-!exampleuser@trusted"
