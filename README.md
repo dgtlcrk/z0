@@ -765,3 +765,48 @@ The `/monitor` inventory has an **Unidentified only** checkbox and an
 The existing optional `~/.config/z0/device_labels.json` mapping remains the
 only operator naming mechanism. No guessed manufacturers, new probes, asset
 merges, persistent inventory changes, or background jobs are involved.
+
+### Opt-in scheduled availability essentials (PR #51)
+
+This feature **does not enable any scheduled checks automatically**.
+`z0-monitor-once` performs one bounded run using **only explicitly listed
+private IPv4 addresses**, reusing the existing three-failure / two-success
+availability transitions and writing to the existing availability v1 history.
+It never updates unified or legacy inventory.
+
+Create `~/.config/z0/monitoring.json` for the `zo` account:
+
+```json
+{
+  "enabled": false,
+  "targets": ["192.168.1.254"],
+  "notify": false
+}
+```
+
+With `enabled: false`, the command does not probe or write any snapshot.
+When ready, explicitly change to `enabled: true`. Set `notify: true` to
+emit one console/journald message **only for confirmed transitions** into
+AVAILABLE or UNAVAILABLE; no messages for intermediate failures/successes.
+The service journal is the notification channel for this first version
+(no SMTP, Slack or other credentials). Check history with
+`z0 network availability-events` or in the web dashboard.
+
+To schedule, **manually** create a *separate* systemd user-specific
+`z0-monitor-once.service` with
+`User=zo`, `Type=oneshot`, and
+`ExecStart=/home/zo/projects/z0/.venv/bin/z0-monitor-once`, plus
+a `z0-monitor-once.timer` with `OnCalendar=*:0/5` and
+`Persistent=false`, then install and enable that timer explicitly.
+Use `systemctl list-timers` and
+`journalctl -u z0-monitor-once.service` to review runs and messages.
+For maximum safety, **start with the timer disabled** and invoke
+`sudo -u zo /home/zo/projects/z0/.venv/bin/z0-monitor-once` manually
+with enabled=false first. Neither unit is installed by this PR.
+The runner uses a nonblocking file lock to prevent two scheduled runs
+from persisting simultaneously, and errors result in a nonzero exit status.
+
+These messages are local journal notifications, **not outbound alerts**.
+If remote outage notifications are needed later, implement them as
+a separate deliberate design change. Do not expose monitoring configuration
+or z0's local API on a public port.
