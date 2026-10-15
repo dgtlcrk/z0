@@ -6,10 +6,10 @@ import base64
 import binascii
 import hmac
 import inspect
+import ipaddress
 import json
 import logging
 import os
-import ipaddress
 from http import HTTPStatus
 from http.server import (
     BaseHTTPRequestHandler,
