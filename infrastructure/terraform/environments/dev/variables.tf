@@ -10,8 +10,8 @@ variable "aws_region" {
 }
 
 variable "aws_account_id" {
-  type    = string
-  default = "123456789012"
+  description = "AWS account ID for this deployment."
+  type        = string
 }
 
 variable "image_tag" {

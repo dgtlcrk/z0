@@ -33,6 +33,9 @@ The ECS service uses `enable_bot = false` by default, so a first Terraform apply
 cd infrastructure/terraform/environments/dev
 cp backend.hcl.example backend.hcl
 cp terraform.tfvars.example terraform.tfvars
+# Supply the AWS account ID explicitly for this shell session:
+export TF_VAR_aws_account_id="$(aws sts get-caller-identity --query Account --output text)"
+# Verify that your active AWS credentials target the intended account before planning.
 # Fill both example files with actual values first.
 terraform init -backend-config=backend.hcl
 terraform fmt -check -recursive ../../
