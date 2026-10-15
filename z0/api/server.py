@@ -9,6 +9,7 @@ import inspect
 import json
 import logging
 import os
+import ipaddress
 from http import HTTPStatus
 from http.server import (
     BaseHTTPRequestHandler,
@@ -626,6 +627,21 @@ def create_server(
     port: int = 8081,
 ) -> ThreadingHTTPServer:
     """Create a z0 API server without starting it."""
+
+    # The API contains infrastructure and LAN inventory. Never expose it
+    # unauthenticated on a non-loopback interface.
+    try:
+        loopback = ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        loopback = host.lower() == "localhost"
+    if not loopback and not (
+        os.environ.get("Z0_API_AUTH_USERNAME")
+        and os.environ.get("Z0_API_AUTH_PASSWORD")
+    ):
+        raise ValueError(
+            "Non-loopback API binding requires Z0_API_AUTH_USERNAME "
+            "and Z0_API_AUTH_PASSWORD; use a TLS reverse proxy"
+        )
 
     server = ThreadingHTTPServer(
         (host, port),
