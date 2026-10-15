@@ -1,7 +1,7 @@
 """Conservative auto-OP join handler tests."""
 
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from z0.services.irc import Z0Bot
 
@@ -22,7 +22,9 @@ def test_exact_hostmask_receives_op():
     connection = Mock()
     connection.get_nickname.return_value = "z0_test_bot"
     event = SimpleNamespace(target="#example-ops", source=Source("198.51.100.10"))
-    bot.on_join(connection, event)
+    with patch("z0.services.irc.config") as config:
+        config.channel = "#example-ops"
+        bot.on_join(connection, event)
     connection.mode.assert_called_once_with("#example-ops", "+o operator")
 
 
