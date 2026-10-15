@@ -82,3 +82,23 @@ def test_legacy_loopback_defaults_without_credentials():
         server.shutdown()
         server.server_close()
         worker.join(timeout=5)
+
+
+def test_non_loopback_bind_requires_auth():
+    import pytest
+
+    with patch.dict(
+        "os.environ",
+        {"Z0_API_AUTH_USERNAME": "", "Z0_API_AUTH_PASSWORD": ""},
+    ):
+        with pytest.raises(ValueError, match="Non-loopback API binding"):
+            create_server("0.0.0.0", 0)
+
+
+def test_non_loopback_bind_with_auth_is_permitted():
+    with patch.dict(
+        "os.environ",
+        {"Z0_API_AUTH_USERNAME": "operator", "Z0_API_AUTH_PASSWORD": "test-secret"},
+    ):
+        server = create_server("0.0.0.0", 0)
+        server.server_close()
