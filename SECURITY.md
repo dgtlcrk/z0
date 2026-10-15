@@ -46,11 +46,12 @@ maintained.
 
 ## Current security limitations
 
+The IRC transport supports TLS with certificate validation when configured; the legacy default can still use plaintext IRC. Do not send sensitive information over plaintext IRC.
+
 The current IRC implementation does not provide:
 
-- TLS configuration
-- IRC account authentication
-- Per-user authorization
+- IRC account authentication as a complete operator identity solution
+- General per-user authorization beyond the scoped operator HMAC flow
 - Per-command access controls
 - Rate limiting
 - Targeted command routing between multiple bot instances
@@ -79,3 +80,15 @@ Operators should:
 - Use AWS Systems Manager instead of exposing administrative ports
 - Keep the host, container image, and Python dependencies updated
 - Review logs before sharing them publicly
+
+## Public repository threat model
+
+- Public source code, historical commits, example Terraform, workflow logs, and published images are visible to potential adversaries. Never place real IP addresses, identity hostmasks, cloud account identifiers, credential values, inventory exports, or unredacted infrastructure logs in public examples.
+- The API is intended for loopback access. Binding to a non-loopback interface requires both Basic Auth environment values; terminate TLS at a trusted reverse proxy and restrict access with network controls. Basic Auth alone is not secure over plaintext HTTP.
+- The local gateway collector currently disables certificate verification for a home-gateway compatibility case. Keep it constrained to a trusted LAN; do not adapt that fetch mechanism for Internet endpoints.
+- GitHub Actions ECR credentials should be restricted to the intended protected branch and least-privilege image repository. Review live AWS IAM policies after any Terraform change; updating code does not update AWS until explicitly applied.
+- Once material is committed to a public repository, deleting or replacing it in the latest tree does not remove the historical exposure. Rotate any real credentials that might have appeared and assess whether history remediation is warranted.
+
+## Recommended deployment review
+
+Audit the Pi firewall/listening ports, Docker socket access, systemd environment-file permissions, IRC TLS/certificate settings, API reverse proxy and network exposure, GitHub branch protection, AWS OIDC role trust, and secrets/Dependency scanning alerts before treating a deployment as hardened.
