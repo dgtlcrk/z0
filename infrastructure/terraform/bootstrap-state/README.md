@@ -2,13 +2,13 @@
 
 Do not use the application Terraform state to create its own backend.
 
-For the initial bootstrap, create a **dedicated globally unique S3 bucket** in account 209586344300, region us-east-1. State contains sensitive infrastructure metadata and must not be committed.
+For the initial bootstrap, create a **dedicated globally unique S3 bucket** in account YOUR_AWS_ACCOUNT_ID, region us-east-1. State contains sensitive infrastructure metadata and must not be committed.
 
 The following commands intentionally require a real bucket name and an authenticated administrator with appropriate permissions. They are **examples, not an automated deployment**.
 
 ```bash
 aws sts get-caller-identity
-# Stop if Account is not 209586344300.
+# Stop if Account is not YOUR_AWS_ACCOUNT_ID.
 export AWS_REGION=us-east-1
 export TF_STATE_BUCKET=REPLACE_WITH_UNIQUE_Z0_STATE_BUCKET
 test "$TF_STATE_BUCKET" != REPLACE_WITH_UNIQUE_Z0_STATE_BUCKET || exit 1
