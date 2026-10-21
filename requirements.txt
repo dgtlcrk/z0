@@ -8,7 +8,7 @@ jaraco.stream==3.0.4
 jaraco.text==4.3.0
 markdown-it-py==4.2.0
 mdurl==0.1.2
-more-itertools==11.1.0
+more-itertools==11.2.1
 Pygments==2.20.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
