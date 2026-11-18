@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import ssl
+import time
 from collections.abc import Callable
 from functools import partial
 from pathlib import Path
@@ -17,6 +19,9 @@ from z0.config import config
 from z0.services.op_auth import OpAuthenticator
 
 MAX_IRC_MESSAGE_LENGTH = 350
+IRC_HEARTBEAT_INTERVAL_SECONDS = 60
+IRC_HEARTBEAT_TIMEOUT_SECONDS = 30
+IRC_HEARTBEAT_CHECK_SECONDS = 5
 
 
 def create_irc_ssl_context() -> ssl.SSLContext:
@@ -44,6 +49,10 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
         secret = os.getenv("IRC_OP_SECRET", "")
         self.op_auth = OpAuthenticator(secret, config.channel) if secret else None
         self._alert_poll_scheduled = False
+        self._heartbeat_poll_scheduled = False
+        self._heartbeat_pending: str | None = None
+        self._heartbeat_deadline = 0.0
+        self._heartbeat_next_due = 0.0
         self.autoop_hostmask = os.getenv("IRC_AUTOOP_HOSTMASK", "").strip().lower()
         connect_factory = (
             irc.connection.Factory(
@@ -88,8 +97,54 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
                 print(f"IRC alert queue item skipped: {type(exc).__name__}",
                       flush=True)
 
+    def _check_irc_heartbeat(self) -> None:
+        """Detect stale IRC sessions even when TCP still appears connected."""
+        connection = self.connection
+        if not connection.is_connected():
+            return
+        now = time.monotonic()
+        if self._heartbeat_pending is not None:
+            if now >= self._heartbeat_deadline:
+                print("IRC heartbeat timed out; forcing reconnect", flush=True)
+                self._heartbeat_pending = None
+                connection.disconnect("IRC heartbeat timeout")
+            return
+        if now < self._heartbeat_next_due:
+            return
+        token = "z0-" + secrets.token_hex(8)
+        self._heartbeat_pending = token
+        self._heartbeat_deadline = now + IRC_HEARTBEAT_TIMEOUT_SECONDS
+        try:
+            connection.ping(token)
+        except (OSError, RuntimeError) as exc:
+            print(f"IRC heartbeat send failed: {type(exc).__name__}", flush=True)
+            self._heartbeat_pending = None
+            connection.disconnect("IRC heartbeat send failed")
+
+    def on_pong(self, connection, event) -> None:
+        """Accept only the matching response for the current heartbeat."""
+        if (
+            connection is self.connection
+            and self._heartbeat_pending is not None
+            and event.arguments
+            and event.arguments[-1].lstrip(":") == self._heartbeat_pending
+        ):
+            self._heartbeat_pending = None
+            self._heartbeat_deadline = 0.0
+            self._heartbeat_next_due = (
+                time.monotonic() + IRC_HEARTBEAT_INTERVAL_SECONDS
+            )
+
     def on_welcome(self, connection, event) -> None:
         print(f"Connected to {config.server}", flush=True)
+        self._heartbeat_pending = None
+        self._heartbeat_deadline = 0.0
+        self._heartbeat_next_due = time.monotonic() + IRC_HEARTBEAT_INTERVAL_SECONDS
+        if not self._heartbeat_poll_scheduled:
+            self.reactor.scheduler.execute_every(
+                IRC_HEARTBEAT_CHECK_SECONDS, self._check_irc_heartbeat
+            )
+            self._heartbeat_poll_scheduled = True
         connection.join(config.channel)
         if (os.environ.get('Z0_IRC_ALERT_SPOOL')
                 and not self._alert_poll_scheduled):
@@ -112,6 +167,9 @@ class Z0Bot(irc.bot.SingleServerIRCBot):
             print("Auto-OP requested for configured IRC identity", flush=True)
 
     def on_disconnect(self, connection, event) -> None:
+        self._heartbeat_pending = None
+        self._heartbeat_deadline = 0.0
+        self._heartbeat_next_due = 0.0
         print("Disconnected from IRC; reconnecting automatically", flush=True)
 
     def send_response(self, connection, target: str, response: str) -> None:
